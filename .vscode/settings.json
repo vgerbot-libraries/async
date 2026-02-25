@@ -1,4 +1,10 @@
 {
     "typescript.tsdk": "node_modules/typescript/lib",
-    "biome.enabled": true
+    "biome.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "fronterior.biome-monorepo",
+    "editor.codeActionsOnSave": {
+        "source.fixAll.biome": "explicit",
+        "source.organizeImports.biome": "explicit"
+    }
 }
