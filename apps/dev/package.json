@@ -1,0 +1,30 @@
+{
+	"name": "dev",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "vinxi dev",
+		"build": "vinxi build",
+		"start": "vinxi start",
+		"version": "vinxi version",
+		"lint": "biome check --write",
+		"check-types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@repo/core": "workspace:*",
+		"@solidjs/meta": "catalog:",
+		"@solidjs/router": "catalog:",
+		"@solidjs/start": "catalog:",
+		"solid-js": "catalog:"
+	},
+	"devDependencies": {
+		"@repo/biome-config": "workspace:^",
+		"@repo/typescript-config": "workspace:*",
+		"@repo/tailwind-config": "workspace:*",
+		"@tailwindcss/vite": "^4.1.18",
+		"tailwindcss": "^4.1.18",
+		"typescript": "catalog:",
+		"vinxi": "catalog:"
+	}
+}

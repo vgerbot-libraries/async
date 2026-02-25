@@ -1,0 +1,12 @@
+{
+	"extends": "@repo/typescript-config/solidjs.json",
+	"compilerOptions": {
+		"paths": {
+			"@repo/core": ["../../packages/core/src"]
+		},
+		"forceConsistentCasingInFileNames": true
+	},
+
+	"include": ["**/*.ts", "**/*.tsx", "../../packages/*/src"],
+	"exclude": ["node_modules"]
+}

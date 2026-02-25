@@ -1,0 +1,38 @@
+{
+    "name": "@repo/root",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "biome check --write",
+        "check-types": "turbo run check-types",
+        "test": "turbo run test",
+        "test:projects": "vitest run",
+        "test:projects:watch": "vitest --watch",
+        "prepare": "simple-git-hooks"
+    },
+    "simple-git-hooks": {
+        "pre-commit": "npx lint-staged"
+    },
+    "lint-staged": {
+        "*": [
+            "biome check --write --no-errors-on-unmatched"
+        ]
+    },
+    "devDependencies": {
+        "@biomejs/biome": "catalog:",
+        "@changesets/cli": "catalog:",
+        "@repo/vitest-config": "workspace:*",
+        "lint-staged": "^16.2.7",
+        "prettier": "catalog:",
+        "simple-git-hooks": "^2.13.1",
+        "turbo": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:"
+    },
+    "packageManager": "pnpm@10.22.0",
+    "engines": {
+        "node": ">=18"
+    }
+}

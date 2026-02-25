@@ -1,0 +1,36 @@
+{
+	"name": "@repo/core",
+	"version": "0.0.0",
+	"private": false,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"publishConfig": {
+		"exports": {
+			".": {
+				"types": "./dist/index.d.ts",
+				"import": "./dist/index.js"
+			}
+		}
+	},
+	"scripts": {
+		"lint": "biome check --write",
+		"generate:component": "turbo gen react-component",
+		"check-types": "tsc --noEmit",
+		"test": "vitest run --coverage --coverage.provider=istanbul",
+		"build": "tsup",
+		"docs:api": "typedoc"
+	},
+	"devDependencies": {
+		"@repo/biome-config": "workspace:^",
+		"@repo/typescript-config": "workspace:*",
+		"@repo/vitest-config": "workspace:*",
+		"@types/node": "catalog:",
+		"@vitest/coverage-istanbul": "catalog:",
+		"tsup": "catalog:",
+		"typedoc": "^0.28.17",
+		"typescript": "catalog:",
+		"vitest": "catalog:"
+	}
+}
