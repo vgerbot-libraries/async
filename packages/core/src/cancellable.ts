@@ -172,13 +172,6 @@ export class CancellableHandle<T> extends Defer<T> {
 }
 
 /**
- * Backoff strategy for retry delays.
- * - 'linear': Delay increases linearly with each attempt
- * - 'exponential': Delay increases exponentially with each attempt
- */
-export type BackOff = "linear" | "exponential";
-
-/**
  * Options for configuring retry behavior in cancellable tasks.
  */
 export interface RetryOptions {
@@ -190,14 +183,14 @@ export interface RetryOptions {
 	 */
 	delay?:
 		| number
-		| ((attempt: number, error: Error, backOff?: BackOff) => number);
+		| ((attempt: number, error: Error, backOff?: string) => number);
 	/**
 	 * Predicate function to determine if a retry should be attempted based on the error.
 	 * Returns true to retry, false to fail immediately.
 	 */
 	retryIf?: (error: Error) => boolean;
 	/** Backoff strategy for calculating retry delays */
-	backOff?: BackOff;
+	backOff?: string;
 }
 
 /**
@@ -227,6 +220,12 @@ export interface CancellableOptions {
  * ```typescript
  * const handle = cancellable(async (token) => {
  *   await token.sleep(1000);
+ *   await token.wrap(fetch('/api/xxx', { signal: token.signal }))
+ *   await token.wrap(cancellable(async token => {
+ *     await token.wrap(new Promise(resolve => {
+ *        setTimeout(resolve, 1000);
+ *     }))
+ *   }))
  *   return "done";
  * });
  *

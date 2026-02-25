@@ -1,5 +1,5 @@
 {
-	"name": "@repo/core",
+	"name": "@vgerbot/async",
 	"version": "0.0.0",
 	"private": false,
 	"type": "module",
