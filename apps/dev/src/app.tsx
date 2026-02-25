@@ -3,9 +3,6 @@ import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
 import "./app.css";
-import { hello } from "@repo/core";
-
-hello();
 
 export default function App() {
 	return (
