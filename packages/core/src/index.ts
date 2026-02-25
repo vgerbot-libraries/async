@@ -1,2 +1,3 @@
 export * from "./cancellable";
-export * from "./Defer";
+export * from "./common/Defer";
+export * from "./functional";
