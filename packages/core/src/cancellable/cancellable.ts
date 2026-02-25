@@ -4,12 +4,16 @@ import { CancellableToken } from "./CancellableToken";
 import { CANCEL_REASON, RETRY_ATTEMPT } from "./internal";
 import { CancellableOptions } from "./options";
 
+
+export type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
+
+
 /**
  * Creates a cancellable asynchronous task with optional retry logic.
  * Returns a CancellableHandle that can be used to cancel the task or await its result.
  *
  * @template T - The type of the task result
- * @param asyncTask - The async function to execute, receives a CancellableTaskToken
+ * @param asyncTask - The async function to execute, receives a CancellableToken
  * @returns A CancellableHandle for managing the task
  *
  * @example
@@ -30,7 +34,7 @@ import { CancellableOptions } from "./options";
  * ```
  */
 export function cancellable<T>(
-	asyncTask: (token: CancellableToken) => Promise<T>,
+	asyncTask: AsyncTask<T>,
 ): CancellableHandle<T>;
 
 /**
@@ -38,7 +42,7 @@ export function cancellable<T>(
  * When silent is false, cancellation errors will be rejected normally.
  *
  * @template T - The type of the task result
- * @param asyncTask - The async function to execute, receives a CancellableTaskToken
+ * @param asyncTask - The async function to execute, receives a CancellableToken
  * @param options - Configuration options with silent set to false
  * @returns A CancellableHandle for managing the task
  */
@@ -52,7 +56,7 @@ export function cancellable<T>(
  * When silent is true, cancellation errors will resolve with undefined instead of rejecting.
  *
  * @template T - The type of the task result
- * @param asyncTask - The async function to execute, receives a CancellableTaskToken
+ * @param asyncTask - The async function to execute, receives a CancellableToken
  * @param options - Configuration options with silent set to true
  * @returns A CancellableHandle that resolves to T or void on cancellation
  */
@@ -61,11 +65,28 @@ export function cancellable<T>(
 	options?: CancellableOptions & { silent: true },
 ): CancellableHandle<T | void>;
 
+/**
+ * Creates a cancellable asynchronous task with optional configuration.
+ * Cancellation errors will be rejected normally.
+ *
+ * @template T - The type of the task result
+ * @param asyncTask - The async function to execute, receives a CancellableToken
+ * @param options - Configuration options without the silent flag
+ * @returns A CancellableHandle for managing the task
+ */
 export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
 	options?: Omit<CancellableOptions, "silent">,
 ): CancellableHandle<T>;
 
+/**
+ * Core implementation of the cancellable task creator.
+ *
+ * @template T - The type of the task result
+ * @param asyncTask - The async function to execute, receives a CancellableToken
+ * @param options - Full configuration options including retry logic and cancellation behavior
+ * @returns A CancellableHandle that resolves to T or void on cancellation
+ */
 export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
 	options?: CancellableOptions,

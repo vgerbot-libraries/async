@@ -1,16 +1,17 @@
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
-import { CancellableToken } from "../cancellable/CancellableToken";
-import { cancellable } from "../cancellable/cancellable";
+import { AsyncTask, cancellable } from "../cancellable/cancellable";
 import { Defer } from "../common/Defer";
 import { Pair } from "../common/Pair";
 import { Queue } from "../common/Queue";
 
-export type SeriesTask<T> = (token: CancellableToken) => Promise<T>;
-
+/**
+ * A task executor that runs tasks in series (sequentially), one after another.
+ * Tasks are queued and executed in the exact order they were submitted.
+ */
 export class SeriesTaskExecutor {
 	private readonly queue = new Queue<
-		Pair<SeriesTask<unknown>, Defer<unknown>> | undefined
+		Pair<AsyncTask<unknown>, Defer<unknown>> | undefined
 	>();
 	private readonly cancellableHandle: CancellableHandle<void>;
 	constructor() {
@@ -33,11 +34,11 @@ export class SeriesTaskExecutor {
 			}
 		});
 	}
-	exec<T>(task: SeriesTask<T>) {
+	exec<T>(task: AsyncTask<T>) {
 		const defer = new Defer<T>();
 
 		this.queue.enqueue(
-			new Pair(task as SeriesTask<unknown>, defer as Defer<unknown>),
+			new Pair(task as AsyncTask<unknown>, defer as Defer<unknown>),
 		);
 		return defer;
 	}
