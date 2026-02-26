@@ -1,12 +1,9 @@
+import { AsyncTask } from "./AsyncTask";
 import { CancelError } from "./CancelError";
 import { CancellableHandle } from "./CancellableHandle";
 import { CancellableToken } from "./CancellableToken";
 import { CANCEL_REASON, RETRY_ATTEMPT } from "./internal";
 import { CancellableOptions } from "./options";
-
-
-export type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
-
 
 /**
  * Creates a cancellable asynchronous task with optional retry logic.
@@ -33,9 +30,7 @@ export type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
  * handle.cancel("User cancelled");
  * ```
  */
-export function cancellable<T>(
-	asyncTask: AsyncTask<T>,
-): CancellableHandle<T>;
+export function cancellable<T>(asyncTask: AsyncTask<T>): CancellableHandle<T>;
 
 /**
  * Creates a cancellable asynchronous task with options.

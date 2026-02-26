@@ -1,5 +1,5 @@
+import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
-import { AsyncTask } from "../cancellable/cancellable";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../common/Defer";
 
@@ -81,9 +81,7 @@ export class DebounceTaskExecutor {
 		this.clearTimer();
 		this.supersedePending();
 		if (this.abortController) {
-			this.abortController.abort(
-				new CancelError("Cancelled", undefined),
-			);
+			this.abortController.abort(new CancelError("Cancelled", undefined));
 			this.abortController = undefined;
 		}
 		this.lastInvokeTime = 0;
@@ -104,9 +102,7 @@ export class DebounceTaskExecutor {
 
 	private shouldInvoke(time: number): boolean {
 		const timeSinceLastCall =
-			this.lastCallTime !== undefined
-				? time - this.lastCallTime
-				: undefined;
+			this.lastCallTime !== undefined ? time - this.lastCallTime : undefined;
 		const timeSinceLastInvoke = time - this.lastInvokeTime;
 
 		return (
@@ -190,9 +186,7 @@ export class DebounceTaskExecutor {
 
 	private supersedePending() {
 		if (this.pendingDefer && !this.pendingDefer.isSettled) {
-			this.pendingDefer.reject(
-				new CancelError("Task superseded", undefined),
-			);
+			this.pendingDefer.reject(new CancelError("Task superseded", undefined));
 		}
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;

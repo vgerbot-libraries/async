@@ -1,6 +1,7 @@
+import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
-import { AsyncTask, cancellable } from "../cancellable/cancellable";
+import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../common/Defer";
 import { Pair } from "../common/Pair";
 import { Queue } from "../common/Queue";
@@ -15,7 +16,7 @@ export class PoolTaskExecutor {
 	>();
 	private readonly workers: CancellableHandle<void>[];
 
-	constructor(private readonly concurrency: number) {
+	constructor(concurrency: number) {
 		this.workers = Array.from({ length: concurrency }, () =>
 			cancellable(async (token) => {
 				while (!this.isCancelled()) {
@@ -53,6 +54,6 @@ export class PoolTaskExecutor {
 	}
 
 	isCancelled() {
-		return this.workers.length > 0 && this.workers[0].isCancelled();
+		return this.workers.length > 0 && (this.workers[0]?.isCancelled() ?? false);
 	}
 }

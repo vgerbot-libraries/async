@@ -1,4 +1,5 @@
-import { AsyncTask, cancellable, CancellableOptions } from "../cancellable";
+import { CancellableOptions, cancellable } from "../cancellable";
+import { AsyncTask } from "../cancellable/AsyncTask";
 
 /**
  * Takes an array of tasks and returns a promise that resolves as soon as any of the tasks resolves.
@@ -8,13 +9,16 @@ import { AsyncTask, cancellable, CancellableOptions } from "../cancellable";
  * @param tasks - The tasks to execute.
  * @returns A cancellable handle that resolves with the first successful task's result.
  */
-export function any(options: CancellableOptions, ...tasks: AsyncTask<unknown>[]) {
-    return cancellable(async (token) => {
-        const promises = tasks.map(async (task) => {
-            return task(token);
-        });
-        return Promise.any(promises);
-    }, options);
+export function any(
+	options: CancellableOptions,
+	...tasks: AsyncTask<unknown>[]
+) {
+	return cancellable(async (token) => {
+		const promises = tasks.map(async (task) => {
+			return task(token);
+		});
+		return Promise.any(promises);
+	}, options);
 }
 
 /**
@@ -25,11 +29,14 @@ export function any(options: CancellableOptions, ...tasks: AsyncTask<unknown>[])
  * @param tasks - The tasks to execute.
  * @returns A cancellable handle that resolves with an array of outcome objects for each task.
  */
-export function allSettled(options: CancellableOptions, ...tasks: AsyncTask<unknown>[]) {
-    return cancellable(async (token) => {
-        const promises = tasks.map(async (task) => {
-            return task(token);
-        });
-        return Promise.allSettled(promises);
-    }, options);
+export function allSettled(
+	options: CancellableOptions,
+	...tasks: AsyncTask<unknown>[]
+) {
+	return cancellable(async (token) => {
+		const promises = tasks.map(async (task) => {
+			return task(token);
+		});
+		return Promise.allSettled(promises);
+	}, options);
 }

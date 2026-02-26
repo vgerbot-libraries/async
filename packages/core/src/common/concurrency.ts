@@ -11,25 +11,25 @@
  * @returns A promise that resolves to an array of results in the same order as the input items.
  */
 export async function runWithConcurrency<T, R>(
-    items: T[],
-    concurrency: number,
-    processor: (item: T, index: number) => Promise<R>
+	items: T[],
+	concurrency: number,
+	processor: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
-    if (!isFinite(concurrency) || concurrency <= 0) {
-        return Promise.all(items.map(processor));
-    }
+	if (!isFinite(concurrency) || concurrency <= 0) {
+		return Promise.all(items.map(processor));
+	}
 
-    const results: R[] = [];
-    const groups = Math.ceil(items.length / concurrency);
+	const results: R[] = [];
+	const groups = Math.ceil(items.length / concurrency);
 
-    for (let i = 0; i < groups; i++) {
-        const startIndex = i * concurrency;
-        const groupItems = items.slice(startIndex, startIndex + concurrency);
-        const groupResults = await Promise.all(
-            groupItems.map((item, index) => processor(item, startIndex + index))
-        );
-        results.push(...groupResults);
-    }
+	for (let i = 0; i < groups; i++) {
+		const startIndex = i * concurrency;
+		const groupItems = items.slice(startIndex, startIndex + concurrency);
+		const groupResults = await Promise.all(
+			groupItems.map((item, index) => processor(item, startIndex + index)),
+		);
+		results.push(...groupResults);
+	}
 
-    return results;
+	return results;
 }

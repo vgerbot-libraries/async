@@ -1,6 +1,7 @@
+import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
-import { AsyncTask, cancellable } from "../cancellable/cancellable";
+import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../common/Defer";
 import { Pair } from "../common/Pair";
 import { Queue } from "../common/Queue";

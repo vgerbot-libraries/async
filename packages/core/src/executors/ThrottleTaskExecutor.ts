@@ -1,4 +1,4 @@
-import { AsyncTask } from "../cancellable/cancellable";
+import { AsyncTask } from "../cancellable/AsyncTask";
 import { Defer } from "../common/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
 
