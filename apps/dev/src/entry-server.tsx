@@ -18,4 +18,4 @@ export default createHandler(() => (
 			</html>
 		)}
 	/>
-));
+)) as ReturnType<typeof createHandler>;

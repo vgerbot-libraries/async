@@ -12,16 +12,16 @@
 		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@repo/core": "workspace:*",
 		"@solidjs/meta": "catalog:",
 		"@solidjs/router": "catalog:",
 		"@solidjs/start": "catalog:",
+		"@vgerbot/async": "workspace:*",
 		"solid-js": "catalog:"
 	},
 	"devDependencies": {
 		"@repo/biome-config": "workspace:^",
-		"@repo/typescript-config": "workspace:*",
 		"@repo/tailwind-config": "workspace:*",
+		"@repo/typescript-config": "workspace:*",
 		"@tailwindcss/vite": "^4.2.1",
 		"tailwindcss": "^4.2.1",
 		"typescript": "catalog:",

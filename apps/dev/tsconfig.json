@@ -2,7 +2,8 @@
 	"extends": "@repo/typescript-config/solidjs.json",
 	"compilerOptions": {
 		"paths": {
-			"@repo/core": ["../../packages/core/src"]
+			"@vgerbot/async": ["../../packages/core/src"],
+			"~/*": ["./src/*"]
 		},
 		"forceConsistentCasingInFileNames": true
 	},
