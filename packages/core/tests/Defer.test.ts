@@ -67,6 +67,9 @@ describe("Defer", () => {
 
 		test("should set isSettled to true", () => {
 			const defer = new Defer<number>();
+			defer.promise.catch(() => {
+				// IGNORE
+			});
 			defer.reject(new Error("test"));
 			expect(defer.isSettled).toBe(true);
 		});
@@ -74,6 +77,9 @@ describe("Defer", () => {
 		test("should store the rejection reason", () => {
 			const defer = new Defer<number>();
 			const error = new Error("test");
+			defer.promise.catch(() => {
+				// IGNORE
+			});
 			defer.reject(error);
 			expect(defer.rejectReason).toBe(error);
 		});
