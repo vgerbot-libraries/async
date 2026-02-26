@@ -115,7 +115,7 @@ export function cancellable<T>(
 			token.throwIfCancelled();
 			token[RETRY_ATTEMPT] = attempt;
 			try {
-				return asyncTask(token);
+				return await asyncTask(token);
 			} catch (error) {
 				lastError = error as Error;
 				if (error instanceof CancelError) {
