@@ -1,4 +1,5 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
+import { ICancellable } from "../cancellable/ICancellable";
 import { Defer } from "../common/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
 
@@ -16,7 +17,7 @@ export interface ThrottleOptions {
  * @param options.leading - Invoke on the leading edge. Default `true`.
  * @param options.trailing - Invoke on the trailing edge. Default `true`.
  */
-export class ThrottleTaskExecutor {
+export class ThrottleTaskExecutor implements ICancellable {
 	private readonly executor: DebounceTaskExecutor;
 
 	constructor(wait: number, options?: ThrottleOptions) {
@@ -33,6 +34,10 @@ export class ThrottleTaskExecutor {
 
 	cancel() {
 		this.executor.cancel();
+	}
+
+	isCancelled(): boolean {
+		return this.executor.isCancelled();
 	}
 
 	flush() {

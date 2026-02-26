@@ -1,6 +1,7 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
+import { ICancellable } from "../cancellable/ICancellable";
 import { Defer } from "../common/Defer";
 
 export interface DebounceOptions {
@@ -19,7 +20,7 @@ export interface DebounceOptions {
  * @param options.trailing - Invoke on the trailing edge (after silence). Default `true`.
  * @param options.maxWait - Maximum time a task can be delayed before forced invocation.
  */
-export class DebounceTaskExecutor {
+export class DebounceTaskExecutor implements ICancellable {
 	private readonly leading: boolean;
 	private readonly trailing: boolean;
 	private readonly maxWait: number | undefined;
@@ -77,15 +78,19 @@ export class DebounceTaskExecutor {
 		return defer;
 	}
 
-	cancel() {
+	cancel(reason?: string | Error) {
 		this.clearTimer();
 		this.supersedePending();
 		if (this.abortController) {
-			this.abortController.abort(new CancelError("Cancelled", undefined));
+			this.abortController.abort(new CancelError("Cancelled", reason));
 			this.abortController = undefined;
 		}
 		this.lastInvokeTime = 0;
 		this.lastCallTime = undefined;
+	}
+
+	isCancelled(): boolean {
+		return this.abortController?.signal.aborted ?? true;
 	}
 
 	flush() {

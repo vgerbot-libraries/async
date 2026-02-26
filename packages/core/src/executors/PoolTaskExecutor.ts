@@ -2,6 +2,7 @@ import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
 import { cancellable } from "../cancellable/cancellable";
+import { ICancellable } from "../cancellable/ICancellable";
 import { Defer } from "../common/Defer";
 import { Pair } from "../common/Pair";
 import { Queue } from "../common/Queue";
@@ -10,7 +11,7 @@ import { Queue } from "../common/Queue";
  * A task executor that processes tasks with a specified maximum concurrency limit.
  * It uses a pool of workers to pull tasks from a queue as soon as a worker becomes available.
  */
-export class PoolTaskExecutor {
+export class PoolTaskExecutor implements ICancellable {
 	private readonly queue = new Queue<
 		Pair<AsyncTask<unknown>, Defer<unknown>> | undefined
 	>();
