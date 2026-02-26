@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
 	CancelError,
 	CancellableHandle,
-	CancellableTaskToken,
+	CancellableToken,
 	cancellable,
 	type RetryOptions,
 } from "../src/cancellable";
@@ -18,13 +18,13 @@ describe("CancelError", () => {
 	});
 });
 
-describe("CancellableTaskToken", () => {
+describe("CancellableToken", () => {
 	let abortController: AbortController;
-	let token: CancellableTaskToken;
+	let token: CancellableToken;
 
 	beforeEach(() => {
 		abortController = new AbortController();
-		token = new CancellableTaskToken(abortController.signal);
+		token = new CancellableToken(abortController.signal);
 	});
 
 	describe("isCancelled", () => {
@@ -223,7 +223,7 @@ describe("cancellable", () => {
 
 		test("should provide token to task", async () => {
 			const handle = cancellable(async (token) => {
-				expect(token).toBeInstanceOf(CancellableTaskToken);
+				expect(token).toBeInstanceOf(CancellableToken);
 				expect(token.signal).toBeInstanceOf(AbortSignal);
 				return 42;
 			});
