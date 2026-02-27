@@ -1,7 +1,11 @@
 // @refresh reload
 import { createHandler, StartServer } from "@solidjs/start/server";
+import type { EventHandler, EventHandlerRequest } from "vinxi/http";
 
-export default createHandler(() => (
+const handler: EventHandler<
+	EventHandlerRequest,
+	Promise<unknown>
+> = createHandler(() => (
 	<StartServer
 		document={({ assets, children, scripts }) => (
 			<html lang="en">
@@ -18,4 +22,6 @@ export default createHandler(() => (
 			</html>
 		)}
 	/>
-)) as ReturnType<typeof createHandler>;
+));
+
+export default handler;
