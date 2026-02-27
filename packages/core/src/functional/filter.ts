@@ -1,7 +1,11 @@
-import { CancellableToken, cancellable } from "../cancellable";
+import {
+	CancellableOptions,
+	CancellableToken,
+	cancellable,
+} from "../cancellable";
 import { runWithConcurrency } from "../common/concurrency";
 
-export interface FilterOptions extends CancellableToken {
+export interface FilterOptions extends CancellableOptions {
 	concurrency?: number;
 }
 
@@ -32,9 +36,10 @@ export function filter<D extends unknown[]>(
 			});
 			return result;
 		} else {
-			return data.filter(async (item) => {
-				return await predicate(item, token);
-			});
+			const flags = await Promise.all(
+				data.map((item) => predicate(item, token)),
+			);
+			return data.filter((_, index) => flags[index]) as D;
 		}
 	}, options);
 }

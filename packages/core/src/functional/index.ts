@@ -1,3 +1,4 @@
+export * from "./allSettled";
 export * from "./any";
 export * from "./filter";
 export * from "./map";

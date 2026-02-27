@@ -1,7 +1,7 @@
 /**
  * Runs an asynchronous task on an array of items with a specified concurrency limit.
- * Processes the items in batches/chunks, waiting for each batch to complete before
- * moving to the next.
+ * Uses a slot-filling approach: as soon as one task completes, the next item starts
+ * processing, keeping all slots busy at all times.
  *
  * @template T - The type of items in the input array.
  * @template R - The type of the result array items.
@@ -19,16 +19,30 @@ export async function runWithConcurrency<T, R>(
 		return Promise.all(items.map(processor));
 	}
 
-	const results: R[] = [];
-	const groups = Math.ceil(items.length / concurrency);
+	const results = new Array<R>(items.length);
+	let nextIndex = 0;
+	let firstError: unknown;
+	let hasError = false;
 
-	for (let i = 0; i < groups; i++) {
-		const startIndex = i * concurrency;
-		const groupItems = items.slice(startIndex, startIndex + concurrency);
-		const groupResults = await Promise.all(
-			groupItems.map((item, index) => processor(item, startIndex + index)),
-		);
-		results.push(...groupResults);
+	async function runWorker(): Promise<void> {
+		while (nextIndex < items.length && !hasError) {
+			const index = nextIndex++;
+			try {
+				results[index] = await processor(items[index]!, index);
+			} catch (err) {
+				if (!hasError) {
+					hasError = true;
+					firstError = err;
+				}
+			}
+		}
+	}
+
+	const workerCount = Math.min(concurrency, items.length);
+	await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+
+	if (hasError) {
+		throw firstError;
 	}
 
 	return results;

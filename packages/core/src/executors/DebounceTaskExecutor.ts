@@ -1,8 +1,8 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
-import { ICancellable } from "../cancellable/ICancellable";
 import { Defer } from "../common/Defer";
+import { ITaskExecutor } from "./ITaskExecutor";
 
 export interface DebounceOptions {
 	leading?: boolean;
@@ -20,7 +20,7 @@ export interface DebounceOptions {
  * @param options.trailing - Invoke on the trailing edge (after silence). Default `true`.
  * @param options.maxWait - Maximum time a task can be delayed before forced invocation.
  */
-export class DebounceTaskExecutor implements ICancellable {
+export class DebounceTaskExecutor implements ITaskExecutor {
 	private readonly leading: boolean;
 	private readonly trailing: boolean;
 	private readonly maxWait: number | undefined;

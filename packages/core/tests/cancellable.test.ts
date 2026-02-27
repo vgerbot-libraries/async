@@ -425,14 +425,6 @@ describe("cancellable", () => {
 
 		test("should support linear backoff", async () => {
 			let attempts = 0;
-			const delayFn = vi.fn(
-				(attempt: number, error: Error, backOff?: string) => {
-					if (backOff === "linear") {
-						return attempt * 100;
-					}
-					return 0;
-				},
-			);
 			const handle = cancellable(
 				async () => {
 					attempts++;
@@ -441,25 +433,17 @@ describe("cancellable", () => {
 					}
 					return 42;
 				},
-				{ retry: { maxAttempts: 3, delay: delayFn, backOff: "linear" } },
+				{ retry: { maxAttempts: 3, delay: 100, backOff: "linear" } },
 			);
 
 			const promise = handle.promise;
-			await vi.advanceTimersByTimeAsync(100);
-			await vi.advanceTimersByTimeAsync(200);
+			await vi.advanceTimersByTimeAsync(100); // 100 * 1
+			await vi.advanceTimersByTimeAsync(200); // 100 * 2
 			await expect(promise).resolves.toBe(42);
 		});
 
 		test("should support exponential backoff", async () => {
 			let attempts = 0;
-			const delayFn = vi.fn(
-				(attempt: number, error: Error, backOff?: string) => {
-					if (backOff === "exponential") {
-						return Math.pow(2, attempt) * 100;
-					}
-					return 0;
-				},
-			);
 			const handle = cancellable(
 				async () => {
 					attempts++;
@@ -468,12 +452,12 @@ describe("cancellable", () => {
 					}
 					return 42;
 				},
-				{ retry: { maxAttempts: 3, delay: delayFn, backOff: "exponential" } },
+				{ retry: { maxAttempts: 3, delay: 100, backOff: "exponential" } },
 			);
 
 			const promise = handle.promise;
-			await vi.advanceTimersByTimeAsync(200); // 2^1 * 100
-			await vi.advanceTimersByTimeAsync(400); // 2^2 * 100
+			await vi.advanceTimersByTimeAsync(200); // 100 * 2^1
+			await vi.advanceTimersByTimeAsync(400); // 100 * 2^2
 			await expect(promise).resolves.toBe(42);
 		});
 

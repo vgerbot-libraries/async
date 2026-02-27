@@ -1,7 +1,7 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { ICancellable } from "../cancellable/ICancellable";
 import { Defer } from "../common/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
+import { ITaskExecutor } from "./ITaskExecutor";
 
 export interface ThrottleOptions {
 	leading?: boolean;
@@ -17,7 +17,7 @@ export interface ThrottleOptions {
  * @param options.leading - Invoke on the leading edge. Default `true`.
  * @param options.trailing - Invoke on the trailing edge. Default `true`.
  */
-export class ThrottleTaskExecutor implements ICancellable {
+export class ThrottleTaskExecutor implements ITaskExecutor {
 	private readonly executor: DebounceTaskExecutor;
 
 	constructor(wait: number, options?: ThrottleOptions) {

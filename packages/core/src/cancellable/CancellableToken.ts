@@ -42,22 +42,37 @@ export class CancellableToken {
 	 */
 	wrap<T>(p: CancellableHandle<T> | Promise<T>): Promise<T> {
 		if (p instanceof CancellableHandle) {
-			this.signal.addEventListener("abort", () => {
+			const listener = () => {
 				p.cancel(this.cancelReason);
+			};
+			this.signal.addEventListener("abort", listener);
+			return p.promise.finally(() => {
+				this.signal.removeEventListener("abort", listener);
 			});
-			return p;
 		}
 		return new Promise<T>((resolve, reject) => {
 			if (this.isCancelled()) {
 				reject(this.cancelReason);
+				return;
 			}
-			p.then((value) => {
-				if (this.isCancelled()) {
-					reject(this.cancelReason);
-				} else {
-					resolve(value);
-				}
-			}, reject);
+			const listener = () => {
+				reject(this.cancelReason);
+			};
+			this.signal.addEventListener("abort", listener);
+			p.then(
+				(value) => {
+					this.signal.removeEventListener("abort", listener);
+					if (this.isCancelled()) {
+						reject(this.cancelReason);
+					} else {
+						resolve(value);
+					}
+				},
+				(err) => {
+					this.signal.removeEventListener("abort", listener);
+					reject(err);
+				},
+			);
 		});
 	}
 
@@ -124,7 +139,13 @@ export class CancellableToken {
 				return;
 			}
 
+			const listener = () => {
+				cleanup();
+				reject(this.cancelReason);
+			};
+
 			const cleanup = schedule(() => {
+				this.signal.removeEventListener("abort", listener);
 				if (this.isCancelled()) {
 					reject(this.cancelReason);
 				} else {
@@ -132,10 +153,7 @@ export class CancellableToken {
 				}
 			});
 
-			this.signal.addEventListener("abort", () => {
-				cleanup();
-				reject(this.cancelReason);
-			});
+			this.signal.addEventListener("abort", listener);
 		});
 	}
 

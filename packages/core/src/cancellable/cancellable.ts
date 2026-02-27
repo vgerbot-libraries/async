@@ -86,13 +86,20 @@ export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
 	options?: CancellableOptions,
 ): CancellableHandle<T | void> {
-	const { signal, silent, retry } = options ?? {};
+	const { signal, silent, retry, timeout } = options ?? {};
 	const abortController = new AbortController();
 
 	if (signal) {
 		signal.addEventListener("abort", () => {
 			abortController.abort(signal.reason);
 		});
+	}
+
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+	if (timeout !== undefined && timeout > 0) {
+		timeoutId = setTimeout(() => {
+			abortController.abort("Timeout");
+		}, timeout);
 	}
 
 	const handle = new CancellableHandle<T | void>(abortController);
@@ -108,7 +115,22 @@ export function cancellable<T>(
 		const retryIf = retry?.retryIf ?? (() => true);
 		const delay = retry?.delay ?? 0;
 		const backOff = retry?.backOff;
-		const calculateDelay = typeof delay === "number" ? () => delay : delay;
+
+		function calculateDelay(attempt: number, error: Error): number {
+			if (typeof delay === "function") {
+				return delay(attempt, error);
+			}
+			if (!backOff) {
+				return delay;
+			}
+			switch (backOff) {
+				case "linear":
+					return delay * attempt;
+				case "exponential":
+					return delay * Math.pow(2, attempt);
+			}
+		}
+
 		let lastError: Error | undefined;
 
 		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -124,10 +146,10 @@ export function cancellable<T>(
 				const shouldRetry = attempt < maxAttempts && retryIf(error as Error);
 
 				if (shouldRetry) {
-					const delay = calculateDelay(attempt, error as Error, backOff);
+					const waitMs = calculateDelay(attempt, error as Error);
 
-					if (delay > 0) {
-						await token.sleep(delay);
+					if (waitMs > 0) {
+						await token.sleep(waitMs);
 					}
 				} else {
 					throw lastError;
@@ -136,13 +158,20 @@ export function cancellable<T>(
 		}
 	}
 
-	executeWithRetry().then(handle.resolve, (reason) => {
-		if (silent && reason instanceof CancelError) {
-			handle.resolve(undefined as T);
-		} else {
-			handle.reject(reason);
-		}
-	});
+	executeWithRetry().then(
+		(value) => {
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
+			handle.resolve(value);
+		},
+		(reason) => {
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
+			if (silent && reason instanceof CancelError) {
+				handle.resolve(undefined as T);
+			} else {
+				handle.reject(reason);
+			}
+		},
+	);
 
 	return handle;
 }
