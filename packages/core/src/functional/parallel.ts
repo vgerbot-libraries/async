@@ -14,6 +14,23 @@ export interface ParallelOptions extends CancellableOptions {
  * @param options - Configuration options, including cancellation token and concurrency limit.
  * @param tasks - The tasks to execute.
  * @returns A cancellable handle that resolves with the array of task results.
+ *
+ * @example
+ * ```ts
+ * const handle = parallel(
+ *   { concurrency: 2 },
+ *   async (token) => {
+ *     await token.sleep(30);
+ *     return "A";
+ *   },
+ *   async (token) => {
+ *     await token.sleep(10);
+ *     return "B";
+ *   },
+ * );
+ *
+ * const result = await handle; // ["A", "B"]
+ * ```
  */
 export function parallel(
 	options: ParallelOptions,
@@ -36,5 +53,15 @@ export function parallel(
 
 /**
  * Alias for `parallel`. Executes tasks concurrently and resolves when all succeed, or rejects when any fail.
+ *
+ * @example
+ * ```ts
+ * const handle = all(
+ *   { concurrency: 2 },
+ *   async () => 1,
+ *   async () => 2,
+ * );
+ * const result = await handle; // [1, 2]
+ * ```
  */
 export const all = parallel;

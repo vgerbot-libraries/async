@@ -7,6 +7,23 @@ import { AsyncTask } from "../cancellable/AsyncTask";
  * @param options - Cancellable configuration options.
  * @param args - The tasks to execute.
  * @returns A cancellable handle that resolves or rejects with the first settled task's result or error.
+ *
+ * @example
+ * ```ts
+ * const handle = race(
+ *   {},
+ *   async (token) => {
+ *     await token.sleep(50);
+ *     return "slow";
+ *   },
+ *   async (token) => {
+ *     await token.sleep(10);
+ *     return "fast";
+ *   },
+ * );
+ *
+ * const winner = await handle; // "fast"
+ * ```
  */
 export function race(
 	options: CancellableOptions,

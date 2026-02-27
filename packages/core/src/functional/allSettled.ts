@@ -8,6 +8,23 @@ import { AsyncTask } from "../cancellable/AsyncTask";
  * @param options - Cancellable configuration options.
  * @param tasks - The tasks to execute.
  * @returns A cancellable handle that resolves with an array of outcome objects for each task.
+ *
+ * @example
+ * ```ts
+ * const handle = allSettled(
+ *   {},
+ *   async () => 1,
+ *   async () => {
+ *     throw new Error("boom");
+ *   },
+ * );
+ *
+ * const result = await handle;
+ * // [
+ * //   { status: "fulfilled", value: 1 },
+ * //   { status: "rejected", reason: Error("boom") }
+ * // ]
+ * ```
  */
 export function allSettled(
 	options: CancellableOptions,

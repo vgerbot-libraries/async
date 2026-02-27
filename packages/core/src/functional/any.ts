@@ -8,6 +8,22 @@ import { AsyncTask } from "../cancellable/AsyncTask";
  * @param options - Cancellable configuration options.
  * @param tasks - The tasks to execute.
  * @returns A cancellable handle that resolves with the first successful task's result.
+ *
+ * @example
+ * ```ts
+ * const handle = any(
+ *   {},
+ *   async () => {
+ *     throw new Error("failed");
+ *   },
+ *   async (token) => {
+ *     await token.sleep(10);
+ *     return "ok";
+ *   },
+ * );
+ *
+ * const result = await handle; // "ok"
+ * ```
  */
 export function any(
 	options: CancellableOptions,

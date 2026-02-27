@@ -2,7 +2,10 @@
     :root {
         --dim-toolbar-contents-height: 2.5rem;
         --dim-toolbar-border-bottom-width: 1px;
-        --dim-header-height: calc(var(--dim-toolbar-border-bottom-width) + var(--dim-toolbar-contents-height));
+        --dim-header-height: calc(
+            var(--dim-toolbar-border-bottom-width) +
+                var(--dim-toolbar-contents-height)
+        );
 
         /* 0rem For mobile; unit is required for calculation in `calc` */
         --dim-container-main-margin-y: 0rem;
@@ -51,7 +54,9 @@
         --light-color-ts-reference: #ff4d82;
         --light-color-ts-call-signature: var(--light-color-ts-method);
         --light-color-ts-index-signature: var(--light-color-ts-property);
-        --light-color-ts-constructor-signature: var(--light-color-ts-constructor);
+        --light-color-ts-constructor-signature: var(
+            --light-color-ts-constructor
+        );
         --light-color-ts-parameter: var(--light-color-ts-variable);
         /* type literal not included as links will never be generated to it */
         --light-color-ts-type-parameter: #a55c0e;
@@ -135,7 +140,9 @@
     @media (prefers-color-scheme: light) {
         :root {
             --color-background: var(--light-color-background);
-            --color-background-secondary: var(--light-color-background-secondary);
+            --color-background-secondary: var(
+                --light-color-background-secondary
+            );
             --color-background-active: var(--light-color-background-active);
             --color-background-warning: var(--light-color-background-warning);
             --color-warning-text: var(--light-color-warning-text);
@@ -170,7 +177,9 @@
             --color-ts-reference: var(--light-color-ts-reference);
             --color-ts-call-signature: var(--light-color-ts-call-signature);
             --color-ts-index-signature: var(--light-color-ts-index-signature);
-            --color-ts-constructor-signature: var(--light-color-ts-constructor-signature);
+            --color-ts-constructor-signature: var(
+                --light-color-ts-constructor-signature
+            );
             --color-ts-parameter: var(--light-color-ts-parameter);
             --color-ts-type-parameter: var(--light-color-ts-type-parameter);
             --color-ts-accessor: var(--light-color-ts-accessor);
@@ -193,7 +202,9 @@
     @media (prefers-color-scheme: dark) {
         :root {
             --color-background: var(--dark-color-background);
-            --color-background-secondary: var(--dark-color-background-secondary);
+            --color-background-secondary: var(
+                --dark-color-background-secondary
+            );
             --color-background-active: var(--dark-color-background-active);
             --color-background-warning: var(--dark-color-background-warning);
             --color-warning-text: var(--dark-color-warning-text);
@@ -228,7 +239,9 @@
             --color-ts-reference: var(--dark-color-ts-reference);
             --color-ts-call-signature: var(--dark-color-ts-call-signature);
             --color-ts-index-signature: var(--dark-color-ts-index-signature);
-            --color-ts-constructor-signature: var(--dark-color-ts-constructor-signature);
+            --color-ts-constructor-signature: var(
+                --dark-color-ts-constructor-signature
+            );
             --color-ts-parameter: var(--dark-color-ts-parameter);
             --color-ts-type-parameter: var(--dark-color-ts-type-parameter);
             --color-ts-accessor: var(--dark-color-ts-accessor);
@@ -284,7 +297,9 @@
         --color-ts-reference: var(--light-color-ts-reference);
         --color-ts-call-signature: var(--light-color-ts-call-signature);
         --color-ts-index-signature: var(--light-color-ts-index-signature);
-        --color-ts-constructor-signature: var(--light-color-ts-constructor-signature);
+        --color-ts-constructor-signature: var(
+            --light-color-ts-constructor-signature
+        );
         --color-ts-parameter: var(--light-color-ts-parameter);
         --color-ts-type-parameter: var(--light-color-ts-type-parameter);
         --color-ts-accessor: var(--light-color-ts-accessor);
@@ -339,7 +354,9 @@
         --color-ts-reference: var(--dark-color-ts-reference);
         --color-ts-call-signature: var(--dark-color-ts-call-signature);
         --color-ts-index-signature: var(--dark-color-ts-index-signature);
-        --color-ts-constructor-signature: var(--dark-color-ts-constructor-signature);
+        --color-ts-constructor-signature: var(
+            --dark-color-ts-constructor-signature
+        );
         --color-ts-parameter: var(--dark-color-ts-parameter);
         --color-ts-type-parameter: var(--dark-color-ts-type-parameter);
         --color-ts-accessor: var(--dark-color-ts-accessor);
@@ -445,11 +462,8 @@
         margin: var(--dim-container-main-margin-y) auto;
         /* toolbar, footer, margin */
         min-height: calc(
-            100svh -
-            var(--dim-header-height) -
-            var(--dim-footer-height) -
-            2 *
-            var(--dim-container-main-margin-y)
+            100svh - var(--dim-header-height) - var(--dim-footer-height) -
+                2 * var(--dim-container-main-margin-y)
         );
     }
 
@@ -490,8 +504,8 @@
     body {
         background: var(--color-background);
         font-family:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif,
-            "Apple Color Emoji", "Segoe UI Emoji";
+            -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+            Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
         font-size: 16px;
         color: var(--color-text);
         margin: 0;
@@ -1143,9 +1157,7 @@
         height: 2.5rem;
         flex: 0 0 auto;
         font-size: 0.875rem;
-        transition:
-            border-color 0.2s,
-            background-color 0.2s;
+        transition: border-color 0.2s, background-color 0.2s;
     }
     #tsd-search-input:focus-visible {
         background-color: var(--color-background-active);
@@ -1295,7 +1307,8 @@
         width: 100%;
         color: var(--color-text);
         background: var(--color-background-secondary);
-        border-bottom: var(--dim-toolbar-border-bottom-width) var(--color-accent) solid;
+        border-bottom: var(--dim-toolbar-border-bottom-width)
+            var(--color-accent) solid;
         transition: transform 0.3s ease-in-out;
     }
     .tsd-page-toolbar a {
@@ -1324,9 +1337,7 @@
         opacity: 0.8;
         height: 2.5rem;
         width: 2.5rem;
-        transition:
-            opacity 0.1s,
-            background-color 0.1s;
+        transition: opacity 0.1s, background-color 0.1s;
         text-align: center;
         cursor: pointer;
         border: none;
@@ -1565,15 +1576,14 @@
     @media (min-width: 770px) and (max-width: 1399px) {
         .col-sidebar {
             max-height: calc(
-                100vh -
-                var(--dim-header-height) -
-                var(--dim-footer-height) -
-                2 *
-                var(--dim-container-main-margin-y)
+                100vh - var(--dim-header-height) - var(--dim-footer-height) -
+                    2 * var(--dim-container-main-margin-y)
             );
             overflow: auto;
             position: sticky;
-            top: calc(var(--dim-header-height) + var(--dim-container-main-margin-y));
+            top: calc(
+                var(--dim-header-height) + var(--dim-container-main-margin-y)
+            );
         }
         .site-menu {
             margin-top: 1rem;
@@ -1583,7 +1593,11 @@
     /* two sidebars */
     @media (min-width: 1200px) {
         .container-main {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr) minmax(0, 20rem);
+            grid-template-columns:
+                minmax(0, 1fr) minmax(0, 2.5fr) minmax(
+                    0,
+                    20rem
+                );
             grid-template-areas: "sidebar content toc";
         }
 
@@ -1606,15 +1620,14 @@
         .page-menu,
         .site-menu {
             max-height: calc(
-                100vh -
-                var(--dim-header-height) -
-                var(--dim-footer-height) -
-                2 *
-                var(--dim-container-main-margin-y)
+                100vh - var(--dim-header-height) - var(--dim-footer-height) -
+                    2 * var(--dim-container-main-margin-y)
             );
             overflow: auto;
             position: sticky;
-            top: calc(var(--dim-header-height) + var(--dim-container-main-margin-y));
+            top: calc(
+                var(--dim-header-height) + var(--dim-container-main-margin-y)
+            );
         }
     }
 }
