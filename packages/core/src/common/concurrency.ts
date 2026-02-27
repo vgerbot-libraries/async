@@ -1,4 +1,5 @@
 /**
+ * @private
  * Runs an asynchronous task on an array of items with a specified concurrency limit.
  * Uses a slot-filling approach: as soon as one task completes, the next item starts
  * processing, keeping all slots busy at all times.
