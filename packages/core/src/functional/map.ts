@@ -14,25 +14,26 @@ export interface MapOptions extends CancellableOptions {
  * Allows controlling the maximum concurrency of the mapping operations.
  *
  * @template I - The type of the input array items.
- * @param data - The array of data to map over.
+ * @param data - The array of data to map over, or a promise that resolves to one.
  * @param callbackfn - An async function applied to each element, producing a mapped value.
  * @param options - Configuration options, including cancellation token and concurrency limit.
  * @returns A cancellable handle that resolves to an array of mapped values.
  */
 export function map<I>(
-	data: I[],
+	data: I[] | Promise<I[]>,
 	callbackfn: (item: I, token: CancellableToken) => Promise<unknown>,
 	options: MapOptions,
 ) {
 	const { concurrency = Infinity } = options;
 
 	return cancellable(async (token) => {
+		const resolvedData = await data;
 		if (isFinite(concurrency)) {
-			return runWithConcurrency(data, concurrency, (item) => {
+			return runWithConcurrency(resolvedData, concurrency, (item) => {
 				return callbackfn(item, token);
 			});
 		} else {
-			const promises = data.map(async (item) => {
+			const promises = resolvedData.map(async (item) => {
 				return callbackfn(item, token);
 			});
 			return Promise.all(promises);

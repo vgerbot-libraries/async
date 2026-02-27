@@ -14,21 +14,22 @@ export interface FilterOptions extends CancellableOptions {
  * Allows controlling the maximum concurrency of the predicate execution.
  *
  * @template D - The type of the array data.
- * @param data - The array of data to filter.
+ * @param data - The array of data to filter, or a promise that resolves to one.
  * @param predicate - An async function applied to each item to determine if it should be kept.
  * @param options - Configuration options, including cancellation token and concurrency limit.
  * @returns A cancellable handle that resolves to an array of the items that passed the predicate.
  */
 export function filter<D extends unknown[]>(
-	data: D,
+	data: D | Promise<D>,
 	predicate: (item: D[number], token: CancellableToken) => Promise<boolean>,
 	options?: FilterOptions,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {
+		const resolvedData = await data;
 		if (isFinite(concurrency)) {
 			const result: D = [] as unknown[] as D;
-			await runWithConcurrency(data, concurrency, async (item) => {
+			await runWithConcurrency(resolvedData, concurrency, async (item) => {
 				const keep = await predicate(item, token);
 				if (keep) {
 					result.push(item);
@@ -37,9 +38,9 @@ export function filter<D extends unknown[]>(
 			return result;
 		} else {
 			const flags = await Promise.all(
-				data.map((item) => predicate(item, token)),
+				resolvedData.map((item) => predicate(item, token)),
 			);
-			return data.filter((_, index) => flags[index]) as D;
+			return resolvedData.filter((_, index) => flags[index]) as D;
 		}
 	}, options);
 }

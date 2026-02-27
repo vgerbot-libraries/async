@@ -5,30 +5,32 @@
  *
  * @template T - The type of items in the input array.
  * @template R - The type of the result array items.
- * @param items - The array of items to process.
+ * @param items - The array of items to process, or a promise that resolves to one.
  * @param concurrency - The maximum number of concurrent tasks. If not finite or <= 0, processes all concurrently.
  * @param processor - The async function to execute for each item.
  * @returns A promise that resolves to an array of results in the same order as the input items.
  */
 export async function runWithConcurrency<T, R>(
-	items: T[],
+	items: T[] | Promise<T[]>,
 	concurrency: number,
 	processor: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
+	const resolvedItems = await items;
+
 	if (!isFinite(concurrency) || concurrency <= 0) {
-		return Promise.all(items.map(processor));
+		return Promise.all(resolvedItems.map(processor));
 	}
 
-	const results = new Array<R>(items.length);
+	const results = new Array<R>(resolvedItems.length);
 	let nextIndex = 0;
 	let firstError: unknown;
 	let hasError = false;
 
 	async function runWorker(): Promise<void> {
-		while (nextIndex < items.length && !hasError) {
+		while (nextIndex < resolvedItems.length && !hasError) {
 			const index = nextIndex++;
 			try {
-				results[index] = await processor(items[index]!, index);
+				results[index] = await processor(resolvedItems[index]!, index);
 			} catch (err) {
 				if (!hasError) {
 					hasError = true;
@@ -38,7 +40,7 @@ export async function runWithConcurrency<T, R>(
 		}
 	}
 
-	const workerCount = Math.min(concurrency, items.length);
+	const workerCount = Math.min(concurrency, resolvedItems.length);
 	await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
 
 	if (hasError) {
