@@ -74,37 +74,53 @@ describe("cancellable", () => {
 		});
 	});
 
-	describe("silent mode", () => {
-		test("should resolve with undefined when cancelled in silent mode", async () => {
+	describe("fallback", () => {
+		test("should resolve with fallback value when cancelled", async () => {
 			const handle = cancellable(
 				async (token) => {
 					await token.sleep(1000);
 					return 42;
 				},
-				{ silent: true },
+				{ fallback: 0 },
 			);
 			handle.cancel();
-			await expect(handle.promise).resolves.toBeUndefined();
+			await expect(handle.promise).resolves.toBe(0);
 		});
 
-		test("should still reject on non-cancel errors in silent mode", async () => {
+		test("should resolve with function fallback and expose cancel state", async () => {
+			const fallback = vi.fn(async (error: unknown, isCancelled: boolean) => {
+				expect(error).toBeInstanceOf(CancelError);
+				expect(isCancelled).toBe(true);
+				return 7;
+			});
+
+			const handle = cancellable(
+				async (token) => {
+					await token.sleep(1000);
+					return 42;
+				},
+				{ fallback },
+			);
+			handle.cancel();
+			await expect(handle.promise).resolves.toBe(7);
+			expect(fallback).toHaveBeenCalledTimes(1);
+		});
+
+		test("should resolve with promise fallback on non-cancel errors", async () => {
 			const handle = cancellable(
 				async () => {
 					throw new Error("task error");
 				},
-				{ silent: true },
+				{ fallback: Promise.resolve(99) },
 			);
-			await expect(handle.promise).rejects.toThrow("task error");
+			await expect(handle.promise).resolves.toBe(99);
 		});
 
-		test("should reject normally when silent is false", async () => {
-			const handle = cancellable(
-				async (token) => {
-					await token.sleep(1000);
-					return 42;
-				},
-				{ silent: false },
-			);
+		test("should reject normally without fallback", async () => {
+			const handle = cancellable(async (token) => {
+				await token.sleep(1000);
+				return 42;
+			});
 			handle.cancel();
 			await expect(handle.promise).rejects.toThrow(CancelError);
 		});
@@ -315,7 +331,7 @@ describe("cancellable", () => {
 			expect(innerHandle.isCancelled()).toBe(true);
 		});
 
-		test("should handle retry with silent mode", async () => {
+		test("should handle retry with fallback configured", async () => {
 			let attempts = 0;
 			const handle = cancellable(
 				async (token) => {
@@ -326,7 +342,7 @@ describe("cancellable", () => {
 					await token.sleep(100);
 					return 42;
 				},
-				{ retry: { maxAttempts: 3, delay: 100 }, silent: true },
+				{ retry: { maxAttempts: 3, delay: 100 }, fallback: 0 },
 			);
 
 			const promise = handle.promise;

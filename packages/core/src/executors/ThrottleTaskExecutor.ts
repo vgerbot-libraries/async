@@ -1,5 +1,5 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { Defer } from "../common/Defer";
+import { Defer } from "../utils/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
 import { ITaskExecutor } from "./ITaskExecutor";
 

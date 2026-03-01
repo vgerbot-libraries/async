@@ -1,4 +1,4 @@
-import { Defer } from "../common/Defer";
+import { Defer } from "../utils/Defer";
 import { CancelError } from "./CancelError";
 import { ICancellable } from "./ICancellable";
 import { CANCEL_REASON } from "./internal";

@@ -2,8 +2,8 @@ import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
 import { cancellable } from "../cancellable/cancellable";
-import { Defer } from "../common/Defer";
-import { Queue } from "../common/Queue";
+import { Defer } from "../utils/Defer";
+import { Queue } from "../utils/Queue";
 import { ITaskExecutor } from "./ITaskExecutor";
 
 interface QueuedTask {

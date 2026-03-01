@@ -1,8 +1,8 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
-import { Defer } from "../common/Defer";
-import { noop } from "../common/noop";
+import { Defer } from "../utils/Defer";
+import { noop } from "../utils/noop";
 import { ITaskExecutor } from "./ITaskExecutor";
 
 export interface DebounceOptions {
