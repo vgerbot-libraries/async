@@ -24,6 +24,11 @@
         },
         "transit": {
             "dependsOn": ["^transit"]
+        },
+        "docs:api": {
+            "cache": false,
+            "dependsOn": ["^docs:api"],
+            "outputs": ["docs/api"]
         }
     }
 }

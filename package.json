@@ -11,7 +11,8 @@
         "test": "turbo run test",
         "test:projects": "vitest run",
         "test:projects:watch": "vitest --watch",
-        "prepare": "simple-git-hooks"
+        "prepare": "simple-git-hooks",
+        "docs:api": "turbo run docs:api"
     },
     "simple-git-hooks": {
         "pre-commit": "npx lint-staged"
