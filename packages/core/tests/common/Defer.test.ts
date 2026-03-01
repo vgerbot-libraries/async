@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { Defer } from "../src/common/Defer";
+import { Defer } from "../../src/common/Defer";
 
 describe("Defer", () => {
 	describe("constructor", () => {
