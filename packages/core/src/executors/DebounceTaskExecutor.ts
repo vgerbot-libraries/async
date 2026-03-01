@@ -57,6 +57,7 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 		const defer = new Defer<T>();
 		this.pendingTask = task as AsyncTask<unknown>;
 		this.pendingDefer = defer as Defer<unknown>;
+		defer.catch(noop);
 		this.lastCallTime = time;
 
 		if (isInvoking) {
@@ -198,7 +199,6 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 					undefined,
 				).withRejectionSite(),
 			);
-			this.pendingDefer.catch(noop);
 		}
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;

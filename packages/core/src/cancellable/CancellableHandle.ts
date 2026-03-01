@@ -1,3 +1,4 @@
+import { noop } from "../utils";
 import { Defer } from "../utils/Defer";
 import { CancelError } from "./CancelError";
 import { ICancellable } from "./ICancellable";
@@ -39,6 +40,7 @@ export class CancellableHandle<T> extends Defer<T> implements ICancellable {
 	) {
 		super();
 		this.name = name;
+		this.catch(noop);
 	}
 
 	/**

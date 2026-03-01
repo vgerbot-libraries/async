@@ -54,6 +54,18 @@ export class PoolTaskExecutor implements ITaskExecutor {
 		for (const handle of this.workers) {
 			handle.cancel();
 		}
+		while (true) {
+			const item = this.queue.dequeueNow();
+			if (!item) {
+				break;
+			}
+			item.defer.reject(
+				CancelError.fromReason(
+					"[cancellable] cancelled: task executor cancelled",
+					"task executor cancelled",
+				),
+			);
+		}
 	}
 
 	isCancelled() {

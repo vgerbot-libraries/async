@@ -78,4 +78,12 @@ export class Queue<T> {
 	peek(): T | undefined {
 		return this.items[0];
 	}
+
+	/**
+	 * Removes and returns the first queued item immediately.
+	 * Returns undefined if the queue is empty.
+	 */
+	dequeueNow(): T | undefined {
+		return this.items.shift();
+	}
 }
