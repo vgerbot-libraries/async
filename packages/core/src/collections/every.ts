@@ -6,7 +6,7 @@ import {
 } from "../cancellable";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface EveryOptions extends CancellableOptions {
+export interface EveryOptions extends CancellableOptions<boolean> {
 	concurrency?: number;
 }
 

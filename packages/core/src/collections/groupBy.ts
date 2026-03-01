@@ -7,7 +7,8 @@ import {
 import { runWithConcurrency } from "../utils/concurrency";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface GroupByOptions extends CancellableOptions {
+export interface GroupByOptions<I = unknown>
+	extends CancellableOptions<Record<string, I[]>> {
 	concurrency?: number;
 }
 
@@ -48,7 +49,7 @@ export interface GroupByOptions extends CancellableOptions {
 export function groupBy<I>(
 	data: I[] | Promise<I[]>,
 	keySelector: (item: I, token: CancellableToken) => Promise<PropertyKey>,
-	options?: GroupByOptions,
+	options?: GroupByOptions<I>,
 ): CancellableHandle<Record<string, I[]>>;
 export function groupBy<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -57,7 +58,7 @@ export function groupBy<I>(
 		key: number | string,
 		token: CancellableToken,
 	) => Promise<PropertyKey>,
-	options?: GroupByOptions,
+	options?: GroupByOptions<I>,
 ): CancellableHandle<Record<string, I[]>>;
 export function groupBy<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -68,7 +69,7 @@ export function groupBy<I>(
 				key: number | string,
 				token: CancellableToken,
 		  ) => Promise<PropertyKey>),
-	options?: GroupByOptions,
+	options?: GroupByOptions<I>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {

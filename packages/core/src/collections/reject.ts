@@ -7,7 +7,7 @@ import {
 import { runWithConcurrency } from "../utils/concurrency";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface RejectOptions extends CancellableOptions {
+export interface RejectOptions<I = unknown> extends CancellableOptions<I[]> {
 	concurrency?: number;
 }
 
@@ -44,7 +44,7 @@ export interface RejectOptions extends CancellableOptions {
 export function reject<I>(
 	data: I[] | Promise<I[]>,
 	predicate: (item: I, token: CancellableToken) => Promise<boolean>,
-	options?: RejectOptions,
+	options?: RejectOptions<I>,
 ): CancellableHandle<I[]>;
 export function reject<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -53,7 +53,7 @@ export function reject<I>(
 		key: number | string,
 		token: CancellableToken,
 	) => Promise<boolean>,
-	options?: RejectOptions,
+	options?: RejectOptions<I>,
 ): CancellableHandle<I[]>;
 export function reject<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -64,7 +64,7 @@ export function reject<I>(
 				key: number | string,
 				token: CancellableToken,
 		  ) => Promise<boolean>),
-	options?: RejectOptions,
+	options?: RejectOptions<I>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {

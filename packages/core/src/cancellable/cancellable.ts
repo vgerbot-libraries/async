@@ -34,44 +34,16 @@ export function cancellable<T>(asyncTask: AsyncTask<T>): CancellableHandle<T>;
 
 /**
  * Creates a cancellable asynchronous task with options.
- * When silent is false, cancellation errors will be rejected normally.
+ * Errors will be rejected unless `fallback` is provided.
  *
  * @template T - The type of the task result
  * @param asyncTask - The async function to execute, receives a CancellableToken
- * @param options - Configuration options with silent set to false
+ * @param options - Configuration options including retry, timeout and fallback
  * @returns A CancellableHandle for managing the task
  */
 export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
-	options?: CancellableOptions & { silent: false },
-): CancellableHandle<T>;
-
-/**
- * Creates a cancellable asynchronous task with silent cancellation.
- * When silent is true, cancellation errors will resolve with undefined instead of rejecting.
- *
- * @template T - The type of the task result
- * @param asyncTask - The async function to execute, receives a CancellableToken
- * @param options - Configuration options with silent set to true
- * @returns A CancellableHandle that resolves to T or void on cancellation
- */
-export function cancellable<T>(
-	asyncTask: (token: CancellableToken) => Promise<T>,
-	options?: CancellableOptions & { silent: true },
-): CancellableHandle<T | void>;
-
-/**
- * Creates a cancellable asynchronous task with optional configuration.
- * Cancellation errors will be rejected normally.
- *
- * @template T - The type of the task result
- * @param asyncTask - The async function to execute, receives a CancellableToken
- * @param options - Configuration options without the silent flag
- * @returns A CancellableHandle for managing the task
- */
-export function cancellable<T>(
-	asyncTask: (token: CancellableToken) => Promise<T>,
-	options?: Omit<CancellableOptions, "silent">,
+	options?: CancellableOptions<T>,
 ): CancellableHandle<T>;
 
 /**
@@ -79,14 +51,18 @@ export function cancellable<T>(
  *
  * @template T - The type of the task result
  * @param asyncTask - The async function to execute, receives a CancellableToken
- * @param options - Full configuration options including retry logic and cancellation behavior
- * @returns A CancellableHandle that resolves to T or void on cancellation
+ * @param options - Full configuration options including retry logic and fallback behavior
+ * @returns A CancellableHandle that resolves to T
  */
 export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
-	options?: CancellableOptions,
-): CancellableHandle<T | void> {
-	const { signal, silent, retry, timeout } = options ?? {};
+	options?: CancellableOptions<T>,
+): CancellableHandle<T> {
+	const { signal, fallback, retry, timeout } = options ?? {};
+	const isFallbackFactory = (
+		value: CancellableOptions<T>["fallback"],
+	): value is (error: unknown, isCancelled: boolean) => Promise<T> =>
+		typeof value === "function";
 	const abortController = new AbortController();
 
 	if (signal) {
@@ -102,7 +78,7 @@ export function cancellable<T>(
 		}, timeout);
 	}
 
-	const handle = new CancellableHandle<T | void>(abortController);
+	const handle = new CancellableHandle<T>(abortController);
 
 	const token = new CancellableToken(abortController.signal);
 
@@ -110,7 +86,7 @@ export function cancellable<T>(
 		handle[CANCEL_REASON] = reason;
 	});
 
-	async function executeWithRetry() {
+	async function executeWithRetry(): Promise<T> {
 		const maxAttempts = retry?.maxAttempts ?? 1;
 		const retryIf = retry?.retryIf ?? (() => true);
 		const delay = retry?.delay ?? 0;
@@ -129,6 +105,7 @@ export function cancellable<T>(
 				case "exponential":
 					return delay * Math.pow(2, attempt);
 			}
+			return delay;
 		}
 
 		let lastError: Error | undefined;
@@ -156,6 +133,8 @@ export function cancellable<T>(
 				}
 			}
 		}
+
+		throw lastError ?? new Error("No attempts were made");
 	}
 
 	executeWithRetry().then(
@@ -165,11 +144,23 @@ export function cancellable<T>(
 		},
 		(reason) => {
 			if (timeoutId !== undefined) clearTimeout(timeoutId);
-			if (silent && reason instanceof CancelError) {
-				handle.resolve(undefined as T);
-			} else {
+			if (fallback === undefined) {
 				handle.reject(reason);
+				return;
 			}
+
+			if (isFallbackFactory(fallback)) {
+				fallback(reason, reason instanceof CancelError).then(
+					(value: T) => handle.resolve(value),
+					(error: unknown) => handle.reject(error),
+				);
+				return;
+			}
+
+			Promise.resolve(fallback).then(
+				(value: T) => handle.resolve(value),
+				(error: unknown) => handle.reject(error),
+			);
 		},
 	);
 

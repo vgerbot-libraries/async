@@ -5,7 +5,7 @@ import {
 	cancellable,
 } from "../cancellable";
 
-export interface AutoOptions extends CancellableOptions {
+export interface AutoOptions<R = unknown> extends CancellableOptions<R> {
 	concurrency?: number;
 }
 
@@ -70,7 +70,7 @@ interface ParsedTask {
  */
 export function auto<TTasks extends AutoTasks>(
 	tasks: TTasks,
-	options?: AutoOptions,
+	options?: AutoOptions<AutoResult<TTasks>>,
 ): CancellableHandle<AutoResult<TTasks>> {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {

@@ -7,7 +7,7 @@ import {
 import { runWithConcurrency } from "../utils/concurrency";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface MapOptions extends CancellableOptions {
+export interface MapOptions<R = unknown> extends CancellableOptions<R[]> {
 	concurrency?: number;
 }
 
@@ -48,7 +48,7 @@ export interface MapOptions extends CancellableOptions {
 export function map<I, R>(
 	data: I[] | Promise<I[]>,
 	callbackfn: (item: I, token: CancellableToken) => Promise<R>,
-	options?: MapOptions,
+	options?: MapOptions<R>,
 ): CancellableHandle<R[]>;
 export function map<I, R>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -57,14 +57,14 @@ export function map<I, R>(
 		key: number | string,
 		token: CancellableToken,
 	) => Promise<R>,
-	options?: MapOptions,
+	options?: MapOptions<R>,
 ): CancellableHandle<R[]>;
 export function map<I, R>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
 	callbackfn:
 		| ((item: I, token: CancellableToken) => Promise<R>)
 		| ((item: I, key: number | string, token: CancellableToken) => Promise<R>),
-	options?: MapOptions,
+	options?: MapOptions<R>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 

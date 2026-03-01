@@ -5,7 +5,7 @@ import {
 } from "../cancellable";
 import { runWithConcurrency } from "../utils/concurrency";
 
-export interface TimesOptions extends CancellableOptions {
+export interface TimesOptions<R = unknown> extends CancellableOptions<R[]> {
 	concurrency?: number;
 }
 
@@ -35,7 +35,7 @@ export interface TimesOptions extends CancellableOptions {
 export function times<R>(
 	count: number,
 	iterator: (index: number, token: CancellableToken) => Promise<R>,
-	options?: TimesOptions,
+	options?: TimesOptions<R>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {

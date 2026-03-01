@@ -2,7 +2,7 @@ import { CancellableOptions, cancellable } from "../cancellable";
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { runWithConcurrency } from "../utils/concurrency";
 
-export interface ParallelOptions extends CancellableOptions {
+export interface ParallelOptions extends CancellableOptions<unknown[]> {
 	concurrency?: number;
 }
 

@@ -7,7 +7,7 @@ import {
 import { runWithConcurrency } from "../utils/concurrency";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface EachOptions extends CancellableOptions {
+export interface EachOptions extends CancellableOptions<void> {
 	concurrency?: number;
 }
 

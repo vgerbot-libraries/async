@@ -31,14 +31,17 @@ export interface RetryOptions {
 /**
  * Options for configuring cancellable task behavior.
  */
-export interface CancellableOptions {
+export interface CancellableOptions<T = unknown> {
 	/** External AbortSignal to link with the task's cancellation */
 	signal?: AbortSignal;
 	/**
-	 * If true, cancellation errors will be silently resolved instead of rejected.
-	 * The promise will resolve with undefined when cancelled.
+	 * Fallback value/provider used when the task rejects.
+	 * Receives the original error and whether it was caused by cancellation.
 	 */
-	silent?: boolean;
+	fallback?:
+		| T
+		| Promise<T>
+		| ((error: unknown, isCancelled: boolean) => Promise<T>);
 	/** Retry configuration for the task */
 	retry?: RetryOptions;
 	/**

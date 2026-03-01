@@ -5,7 +5,8 @@ import {
 } from "../cancellable";
 import { runWithConcurrency } from "../utils/concurrency";
 
-export interface MapValuesOptions extends CancellableOptions {
+export interface MapValuesOptions<R = unknown>
+	extends CancellableOptions<Record<string, R>> {
 	concurrency?: number;
 }
 
@@ -40,7 +41,7 @@ export function mapValues<T extends Record<string, unknown>, R>(
 		key: keyof T,
 		token: CancellableToken,
 	) => Promise<R>,
-	options?: MapValuesOptions,
+	options?: MapValuesOptions<R>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {

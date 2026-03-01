@@ -6,7 +6,8 @@ import {
 } from "../cancellable";
 import { CollectionInput, normalizeCollection } from "./internalCollection";
 
-export interface DetectOptions extends CancellableOptions {
+export interface DetectOptions<I = unknown>
+	extends CancellableOptions<I | undefined> {
 	concurrency?: number;
 }
 
@@ -47,7 +48,7 @@ export interface DetectOptions extends CancellableOptions {
 export function detect<I>(
 	data: I[] | Promise<I[]>,
 	predicate: (item: I, token: CancellableToken) => Promise<boolean>,
-	options?: DetectOptions,
+	options?: DetectOptions<I>,
 ): CancellableHandle<I | undefined>;
 export function detect<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -56,7 +57,7 @@ export function detect<I>(
 		key: number | string,
 		token: CancellableToken,
 	) => Promise<boolean>,
-	options?: DetectOptions,
+	options?: DetectOptions<I>,
 ): CancellableHandle<I | undefined>;
 export function detect<I>(
 	data: CollectionInput<I> | Promise<CollectionInput<I>>,
@@ -67,7 +68,7 @@ export function detect<I>(
 				key: number | string,
 				token: CancellableToken,
 		  ) => Promise<boolean>),
-	options?: DetectOptions,
+	options?: DetectOptions<I>,
 ) {
 	const { concurrency = Infinity } = options ?? {};
 	return cancellable(async (token) => {
