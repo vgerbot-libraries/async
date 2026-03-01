@@ -27,7 +27,7 @@ import { AsyncTask } from "../cancellable/AsyncTask";
  * ```
  */
 export function allSettled(
-	options: CancellableOptions,
+	options: CancellableOptions<unknown[]>,
 	...tasks: AsyncTask<unknown>[]
 ) {
 	return cancellable(async (token) => {
