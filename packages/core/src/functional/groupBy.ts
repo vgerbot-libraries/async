@@ -41,7 +41,7 @@ export interface GroupByOptions extends CancellableOptions {
  *   async (value, key) => (key === "b" ? "special" : value % 2 ? "odd" : "even"),
  * );
  *
- * const result = await handle.promise;
+ * const result = await handle;
  * // { odd: [1, 3], special: [2] }
  * ```
  */

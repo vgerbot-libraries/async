@@ -42,7 +42,7 @@ export interface FilterOptions extends CancellableOptions {
  *   async (value, key) => key !== "a" && value >= 2,
  * );
  *
- * const result = await handle.promise; // [2, 3]
+ * const result = await handle; // [2, 3]
  * ```
  */
 export function filter<I>(

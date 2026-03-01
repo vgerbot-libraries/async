@@ -40,7 +40,7 @@ export interface EveryOptions extends CancellableOptions {
  *   async (value, key) => key !== "x" && value % 2 === 0,
  * );
  *
- * const allMatch = await handle.promise; // true
+ * const allMatch = await handle; // true
  * ```
  */
 export function every<I>(

@@ -41,7 +41,7 @@ export interface DetectOptions extends CancellableOptions {
  *   async (value, key) => key === "b" && value > 3,
  * );
  *
- * const found = await handle.promise; // 4
+ * const found = await handle; // 4
  * ```
  */
 export function detect<I>(

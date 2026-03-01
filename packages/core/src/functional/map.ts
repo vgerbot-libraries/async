@@ -42,7 +42,7 @@ export interface MapOptions extends CancellableOptions {
  *   async (value, key) => `${String(key)}:${value * 10}`,
  * );
  *
- * const result = await handle.promise; // ["a:10", "b:20"]
+ * const result = await handle; // ["a:10", "b:20"]
  * ```
  */
 export function map<I, R>(

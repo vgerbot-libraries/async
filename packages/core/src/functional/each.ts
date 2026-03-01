@@ -31,7 +31,7 @@ export interface EachOptions extends CancellableOptions {
  *   { concurrency: 2 },
  * );
  *
- * await handle.promise;
+ * await handle;
  * ```
  *
  * @example
@@ -43,7 +43,7 @@ export interface EachOptions extends CancellableOptions {
  *   },
  * );
  *
- * await handle.promise;
+ * await handle;
  * ```
  */
 export function each<I>(

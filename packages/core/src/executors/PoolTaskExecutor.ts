@@ -57,6 +57,9 @@ export class PoolTaskExecutor implements ITaskExecutor {
 	}
 
 	isCancelled() {
+		if (!this.workers) {
+			return false;
+		}
 		return this.workers.length > 0 && (this.workers[0]?.isCancelled() ?? false);
 	}
 }

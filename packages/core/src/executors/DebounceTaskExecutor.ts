@@ -2,6 +2,7 @@ import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../common/Defer";
+import { noop } from "../common/noop";
 import { ITaskExecutor } from "./ITaskExecutor";
 
 export interface DebounceOptions {
@@ -192,6 +193,7 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 	private supersedePending() {
 		if (this.pendingDefer && !this.pendingDefer.isSettled) {
 			this.pendingDefer.reject(new CancelError("Task superseded", undefined));
+			this.pendingDefer.catch(noop);
 		}
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;

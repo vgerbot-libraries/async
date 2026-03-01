@@ -28,7 +28,7 @@ export type WhilstIteratee = (token: CancellableToken) => void | Promise<void>;
  *   },
  * );
  *
- * await handle.promise;
+ * await handle;
  * // count === 3
  * ```
  */
@@ -66,7 +66,7 @@ export function whilst(
  *   },
  * );
  *
- * await handle.promise;
+ * await handle;
  * // ticks === 2
  * ```
  */

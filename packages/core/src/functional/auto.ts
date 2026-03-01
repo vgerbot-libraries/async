@@ -64,7 +64,7 @@ interface ParsedTask {
  *   { concurrency: 2 },
  * );
  *
- * const result = await handle.promise;
+ * const result = await handle;
  * // { config: { baseUrl: "/api" }, user: { ... }, posts: ["post-of-1"] }
  * ```
  */

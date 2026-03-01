@@ -29,7 +29,7 @@ export interface TimesOptions extends CancellableOptions {
  *   { concurrency: 2 },
  * );
  *
- * const result = await handle.promise; // [0, 1, 4, 9]
+ * const result = await handle; // [0, 1, 4, 9]
  * ```
  */
 export function times<R>(

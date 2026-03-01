@@ -39,7 +39,7 @@ import { CollectionInput, normalizeCollection } from "./internalCollection";
  *   "",
  * );
  *
- * const result = await handle.promise; // "a=1;b=2;"
+ * const result = await handle; // "a=1;b=2;"
  * ```
  */
 export function reduce<I, R>(

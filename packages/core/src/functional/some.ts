@@ -40,7 +40,7 @@ export interface SomeOptions extends CancellableOptions {
  *   async (value, key) => key !== "a" && value % 2 === 1,
  * );
  *
- * const hasMatch = await handle.promise; // true
+ * const hasMatch = await handle; // true
  * ```
  */
 export function some<I>(

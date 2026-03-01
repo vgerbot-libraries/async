@@ -28,7 +28,7 @@ export interface RejectOptions extends CancellableOptions {
  *   { concurrency: 2 },
  * );
  *
- * const result = await handle.promise; // [1, 3]
+ * const result = await handle; // [1, 3]
  * ```
  *
  * @example
@@ -38,7 +38,7 @@ export interface RejectOptions extends CancellableOptions {
  *   async (value, key) => key === "b" || value < 2,
  * );
  *
- * const result = await handle.promise; // [3]
+ * const result = await handle; // [3]
  * ```
  */
 export function reject<I>(
