@@ -105,7 +105,10 @@ class DefaultTaskQueue<T, R> implements TaskQueue<T, R> {
 	push(task: T): Promise<R> {
 		if (this.isCancelled()) {
 			return Promise.reject(
-				new CancelError("Queue cancelled", this.abortController.signal.reason),
+				CancelError.fromReason(
+					"Queue cancelled",
+					this.abortController.signal.reason,
+				).withRejectionSite(),
 			);
 		}
 		const defer = new Defer<R>();
@@ -154,7 +157,10 @@ class DefaultTaskQueue<T, R> implements TaskQueue<T, R> {
 			return;
 		}
 		this.abortController.abort(reason);
-		const error = new CancelError("Queue cancelled", reason);
+		const error = CancelError.fromReason(
+			"Queue cancelled",
+			reason,
+		).withRejectionSite();
 		for (const item of this.pending.splice(0)) {
 			item.defer.reject(error);
 		}

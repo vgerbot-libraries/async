@@ -1,5 +1,5 @@
 export interface ICancellable {
-	cancel(reason?: string | Error): void;
+	cancel(reason?: unknown): void;
 
 	isCancelled(): boolean;
 }

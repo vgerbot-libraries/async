@@ -79,11 +79,11 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 		return defer;
 	}
 
-	cancel(reason?: string | Error) {
+	cancel(reason?: unknown) {
 		this.clearTimer();
 		this.supersedePending();
 		if (this.abortController) {
-			this.abortController.abort(new CancelError("Cancelled", reason));
+			this.abortController.abort(CancelError.fromReason("Cancelled", reason));
 			this.abortController = undefined;
 		}
 		this.lastInvokeTime = 0;
@@ -192,7 +192,12 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 
 	private supersedePending() {
 		if (this.pendingDefer && !this.pendingDefer.isSettled) {
-			this.pendingDefer.reject(new CancelError("Task superseded", undefined));
+			this.pendingDefer.reject(
+				CancelError.fromReason(
+					"Task superseded",
+					undefined,
+				).withRejectionSite(),
+			);
 			this.pendingDefer.catch(noop);
 		}
 		this.pendingTask = undefined;

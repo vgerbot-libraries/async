@@ -191,7 +191,7 @@ export function series(
 				previousResult = await task(previousResult as void & unknown, token);
 			} else if (task instanceof CancellableHandle) {
 				if (task.isCancelled()) {
-					throw task.cancelReason;
+					throw task.cancelError;
 				}
 				previousResult = await task.promise;
 			} else {

@@ -21,7 +21,7 @@ export class CancellableToken {
 		return this[RETRY_ATTEMPT];
 	}
 
-	private cancelReason: CancelError | null = null;
+	private cancelError: CancelError | null = null;
 
 	/**
 	 * Creates a new CancellableTaskToken instance.
@@ -32,11 +32,14 @@ export class CancellableToken {
 		name?: string,
 	) {
 		this.name = name;
+
+		if (signal.aborted) {
+			this.syncCancelError(signal.reason);
+			return;
+		}
+
 		signal.addEventListener("abort", () => {
-			this.cancelReason = new CancelError(
-				formatCancelMessage(this.name, signal.reason),
-				signal.reason,
-			);
+			this.syncCancelError(signal.reason);
 		});
 	}
 
@@ -51,7 +54,7 @@ export class CancellableToken {
 	wrap<T>(p: CancellableHandle<T> | Promise<T>): Promise<T> {
 		if (p instanceof CancellableHandle) {
 			const listener = () => {
-				p.cancel(this.cancelReason);
+				p.cancel(this.currentCancelError());
 			};
 			this.signal.addEventListener("abort", listener);
 			return p.promise.finally(() => {
@@ -60,18 +63,18 @@ export class CancellableToken {
 		}
 		return new Promise<T>((resolve, reject) => {
 			if (this.isCancelled()) {
-				reject(this.cancelReason);
+				reject(this.rejectionError());
 				return;
 			}
 			const listener = () => {
-				reject(this.cancelReason);
+				reject(this.rejectionError());
 			};
 			this.signal.addEventListener("abort", listener);
 			p.then(
 				(value) => {
 					this.signal.removeEventListener("abort", listener);
 					if (this.isCancelled()) {
-						reject(this.cancelReason);
+						reject(this.rejectionError());
 					} else {
 						resolve(value);
 					}
@@ -143,19 +146,19 @@ export class CancellableToken {
 	delay(schedule: (done: () => void) => () => void) {
 		return new Promise<void>((resolve, reject) => {
 			if (this.isCancelled()) {
-				reject(this.cancelReason);
+				reject(this.rejectionError());
 				return;
 			}
 
 			const listener = () => {
 				cleanup();
-				reject(this.cancelReason);
+				reject(this.rejectionError());
 			};
 
 			const cleanup = schedule(() => {
 				this.signal.removeEventListener("abort", listener);
 				if (this.isCancelled()) {
-					reject(this.cancelReason);
+					reject(this.rejectionError());
 				} else {
 					resolve();
 				}
@@ -188,7 +191,7 @@ export class CancellableToken {
 	 */
 	throwIfCancelled() {
 		if (this.isCancelled()) {
-			throw this.cancelReason;
+			throw this.rejectionError();
 		}
 	}
 
@@ -217,9 +220,9 @@ export class CancellableToken {
 	 * unsubscribe();
 	 * ```
 	 */
-	onCancel(callback: (error: CancelError | null) => void) {
+	onCancel(callback: (error: CancelError) => void) {
 		const listener = () => {
-			callback(this.cancelReason);
+			callback(this.currentCancelError());
 		};
 		if (this.isCancelled()) {
 			listener();
@@ -232,6 +235,24 @@ export class CancellableToken {
 				this.signal.removeEventListener("abort", listener);
 			};
 		}
+	}
+
+	private syncCancelError(reason: unknown) {
+		this.cancelError = CancelError.fromReason(
+			formatCancelMessage(this.name, reason),
+			reason,
+		);
+	}
+
+	private currentCancelError(): CancelError {
+		if (!this.cancelError) {
+			this.syncCancelError(this.signal.reason);
+		}
+		return this.cancelError as CancelError;
+	}
+
+	private rejectionError() {
+		return this.currentCancelError().withRejectionSite();
 	}
 }
 

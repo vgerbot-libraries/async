@@ -19,8 +19,15 @@ export class CancellableHandle<T> extends Defer<T> implements ICancellable {
 	 *
 	 * @returns The CancelError that caused the cancellation, or null if not cancelled
 	 */
-	public get cancelReason(): CancelError | null {
+	public get cancelError(): CancelError | null {
 		return this[CANCEL_REASON];
+	}
+
+	/**
+	 * Backward-compatible alias for older consumers.
+	 */
+	public get cancelReason(): CancelError | null {
+		return this.cancelError;
 	}
 	/**
 	 * Creates a new CancellableHandle instance.

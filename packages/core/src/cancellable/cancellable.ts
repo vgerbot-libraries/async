@@ -68,9 +68,14 @@ export function cancellable<T>(
 	const abortController = new AbortController();
 
 	if (signal) {
-		signal.addEventListener("abort", () => {
+		const relayAbort = () => {
 			abortController.abort(signal.reason);
-		});
+		};
+		if (signal.aborted) {
+			relayAbort();
+		} else {
+			signal.addEventListener("abort", relayAbort, { once: true });
+		}
 	}
 
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -84,9 +89,9 @@ export function cancellable<T>(
 
 	const token = new CancellableToken(abortController.signal, name);
 
-	token.onCancel((reason) => {
-		handle[CANCEL_REASON] = reason;
-		Promise.resolve(onCancel?.(reason));
+	token.onCancel((cancelError) => {
+		handle[CANCEL_REASON] = cancelError;
+		Promise.resolve(onCancel?.(cancelError));
 	});
 
 	async function executeWithRetry(): Promise<T> {

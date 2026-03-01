@@ -38,10 +38,10 @@ export interface CancellableOptions<T = unknown> {
 	signal?: AbortSignal;
 	/**
 	 * Callback invoked when the task is cancelled.
-	 * Receives the resolved CancelError (or null if unavailable).
+	 * Receives the resolved CancelError.
 	 */
 	onCancel?: (
-		error: import("./CancelError").CancelError | null,
+		error: import("./CancelError").CancelError,
 	) => void | Promise<void>;
 	/**
 	 * Fallback value/provider used when the task rejects.

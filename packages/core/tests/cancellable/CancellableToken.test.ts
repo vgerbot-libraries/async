@@ -53,6 +53,21 @@ describe("CancellableToken", () => {
 				"[worker-1] cancelled",
 			);
 		});
+
+		test("should preserve reason stack and attach throw-site stack", () => {
+			const reason = new Error("cancel origin");
+			abortController.abort(reason);
+			try {
+				token.throwIfCancelled();
+				expect.unreachable("expected throwIfCancelled to throw");
+			} catch (error) {
+				expect(error).toBeInstanceOf(CancelError);
+				const cancelError = error as CancelError;
+				expect(cancelError.reason).toBe(reason);
+				expect(cancelError.reasonStack).toBe(reason.stack);
+				expect(cancelError.rejectionStack).toContain("throwIfCancelled");
+			}
+		});
 	});
 
 	describe("wrap", () => {
@@ -69,6 +84,23 @@ describe("CancellableToken", () => {
 			const wrapped = token.wrap(promise);
 			abortController.abort("cancelled");
 			await expect(wrapped).rejects.toThrow(CancelError);
+		});
+
+		test("should retain dual-stack diagnostics in wrapped rejection", async () => {
+			const reason = new Error("cancel origin");
+			const promise = new Promise((resolve) => setTimeout(resolve, 50));
+			const wrapped = token.wrap(promise);
+			abortController.abort(reason);
+			try {
+				await wrapped;
+				expect.unreachable("expected wrapped promise to reject");
+			} catch (error) {
+				expect(error).toBeInstanceOf(CancelError);
+				const cancelError = error as CancelError;
+				expect(cancelError.reason).toBe(reason);
+				expect(cancelError.reasonStack).toBe(reason.stack);
+				expect(cancelError.rejectionStack).toContain("listener");
+			}
 		});
 
 		test("should reject wrapped promise when already cancelled", async () => {
@@ -179,6 +211,15 @@ describe("CancellableToken", () => {
 			vi.advanceTimersByTime(100);
 			await Promise.resolve();
 			expect(fn).toHaveBeenCalledTimes(1); // Should not increase
+		});
+	});
+
+	describe("construction", () => {
+		test("should initialize cancel error for already-aborted signal", () => {
+			const alreadyAborted = new AbortController();
+			alreadyAborted.abort("done");
+			const immediateToken = new CancellableToken(alreadyAborted.signal);
+			expect(() => immediateToken.throwIfCancelled()).toThrow(CancelError);
 		});
 	});
 });

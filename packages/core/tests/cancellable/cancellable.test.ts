@@ -90,6 +90,19 @@ describe("cancellable", () => {
 			await expect(handle.promise).rejects.toThrow(CancelError);
 		});
 
+		test("should handle already-aborted external signal", async () => {
+			const externalController = new AbortController();
+			externalController.abort("external cancel");
+			const handle = cancellable(
+				async (token) => {
+					token.throwIfCancelled();
+					return 42;
+				},
+				{ signal: externalController.signal },
+			);
+			await expect(handle.promise).rejects.toThrow(CancelError);
+		});
+
 		test("should include task name in timeout cancel message", async () => {
 			vi.useFakeTimers();
 			const handle = cancellable(
@@ -416,6 +429,29 @@ describe("cancellable", () => {
 			outerHandle.cancel();
 			await expect(outerHandle.promise).rejects.toThrow(CancelError);
 			expect(innerHandle.isCancelled()).toBe(true);
+		});
+
+		test("should preserve dual-stack diagnostics across nested wraps", async () => {
+			const outerHandle = cancellable(async (token) => {
+				const inner = cancellable(async (innerToken) => {
+					await innerToken.sleep(1000);
+					return 42;
+				});
+				return token.wrap(inner);
+			});
+
+			const reason = new Error("manual cancel");
+			outerHandle.cancel(reason);
+
+			try {
+				await outerHandle.promise;
+				expect.unreachable("expected nested handle to reject");
+			} catch (error) {
+				expect(error).toBeInstanceOf(CancelError);
+				const cancelError = error as CancelError;
+				expect(cancelError.reasonStack).toBe(reason.stack);
+				expect(cancelError.rejectionStack).toBeTruthy();
+			}
 		});
 
 		test("should handle retry with fallback configured", async () => {
