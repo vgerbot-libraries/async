@@ -12,6 +12,7 @@ export const sharedConfig: {
             reporter: [
                 ["json", { file: "coverage.json" }],
                 ["cobertura", { file: "cobertura-coverage.xml" }],
+                ["html"],
             ] as BaseCoverageOptions["reporter"],
             enabled: true,
         } satisfies CoverageOptions<"istanbul">,
