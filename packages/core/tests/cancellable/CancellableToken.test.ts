@@ -23,6 +23,14 @@ describe("CancellableToken", () => {
 			abortController.abort();
 			expect(token.isCancelled()).toBe(true);
 		});
+
+		test("should expose token name", () => {
+			const namedToken = new CancellableToken(
+				abortController.signal,
+				"worker-1",
+			);
+			expect(namedToken.name).toBe("worker-1");
+		});
 	});
 
 	describe("throwIfCancelled", () => {
@@ -33,6 +41,17 @@ describe("CancellableToken", () => {
 		test("should throw CancelError when cancelled", () => {
 			abortController.abort("test reason");
 			expect(() => token.throwIfCancelled()).toThrow(CancelError);
+		});
+
+		test("should include token name in cancel message", () => {
+			const namedToken = new CancellableToken(
+				abortController.signal,
+				"worker-1",
+			);
+			abortController.abort("test reason");
+			expect(() => namedToken.throwIfCancelled()).toThrow(
+				"[worker-1] cancelled",
+			);
 		});
 	});
 

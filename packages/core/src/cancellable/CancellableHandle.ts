@@ -11,6 +11,7 @@ import { CANCEL_REASON } from "./internal";
  */
 export class CancellableHandle<T> extends Defer<T> implements ICancellable {
 	[CANCEL_REASON]: CancelError | null = null;
+	public readonly name?: string;
 
 	/**
 	 * Gets the cancellation error if the task has been cancelled.
@@ -25,8 +26,12 @@ export class CancellableHandle<T> extends Defer<T> implements ICancellable {
 	 * Creates a new CancellableHandle instance.
 	 * @param abortController - The AbortController used to manage cancellation
 	 */
-	constructor(private readonly abortController: AbortController) {
+	constructor(
+		private readonly abortController: AbortController,
+		name?: string,
+	) {
 		super();
+		this.name = name;
 	}
 
 	/**

@@ -180,6 +180,10 @@ export function series(
 	...args: SeriesTask<unknown, unknown>[]
 ): CancellableHandle<unknown> {
 	const tasks = [task1, ...args];
+	const resolvedOptions: CancellableOptions = {
+		...options,
+		name: options.name ?? "series",
+	};
 	return cancellable(async (token) => {
 		let previousResult: unknown;
 		for (const task of tasks) {
@@ -196,5 +200,5 @@ export function series(
 			token.throwIfCancelled();
 		}
 		return previousResult;
-	}, options);
+	}, resolvedOptions);
 }

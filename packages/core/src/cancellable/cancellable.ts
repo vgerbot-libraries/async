@@ -58,7 +58,8 @@ export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
 	options?: CancellableOptions<T>,
 ): CancellableHandle<T> {
-	const { signal, fallback, retry, timeout } = options ?? {};
+	const { name, signal, fallback, retry, timeout } = options ?? {};
+	const label = name?.trim() ? `[${name}]` : "[cancellable]";
 	const isFallbackFactory = (
 		value: CancellableOptions<T>["fallback"],
 	): value is (error: unknown, isCancelled: boolean) => Promise<T> =>
@@ -74,13 +75,13 @@ export function cancellable<T>(
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	if (timeout !== undefined && timeout > 0) {
 		timeoutId = setTimeout(() => {
-			abortController.abort("Timeout");
+			abortController.abort(`${label} timeout after ${timeout}ms`);
 		}, timeout);
 	}
 
-	const handle = new CancellableHandle<T>(abortController);
+	const handle = new CancellableHandle<T>(abortController, name);
 
-	const token = new CancellableToken(abortController.signal);
+	const token = new CancellableToken(abortController.signal, name);
 
 	token.onCancel((reason) => {
 		handle[CANCEL_REASON] = reason;
@@ -129,6 +130,9 @@ export function cancellable<T>(
 						await token.sleep(waitMs);
 					}
 				} else {
+					if (lastError instanceof Error) {
+						lastError.message = `${label} attempt ${attempt}/${maxAttempts} failed: ${lastError.message}`;
+					}
 					throw lastError;
 				}
 			}

@@ -32,6 +32,8 @@ export interface RetryOptions {
  * Options for configuring cancellable task behavior.
  */
 export interface CancellableOptions<T = unknown> {
+	/** Optional name for tracing and diagnostics */
+	name?: string;
 	/** External AbortSignal to link with the task's cancellation */
 	signal?: AbortSignal;
 	/**

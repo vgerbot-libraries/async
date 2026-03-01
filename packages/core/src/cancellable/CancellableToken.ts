@@ -8,6 +8,7 @@ import { RETRY_ATTEMPT } from "./internal";
  */
 export class CancellableToken {
 	[RETRY_ATTEMPT]: number = 0;
+	public readonly name?: string;
 
 	/**
 	 * Gets the current retry attempt number.
@@ -26,9 +27,16 @@ export class CancellableToken {
 	 * Creates a new CancellableTaskToken instance.
 	 * @param signal - The AbortSignal to monitor for cancellation
 	 */
-	constructor(public readonly signal: AbortSignal) {
+	constructor(
+		public readonly signal: AbortSignal,
+		name?: string,
+	) {
+		this.name = name;
 		signal.addEventListener("abort", () => {
-			this.cancelReason = new CancelError("Task canceled", signal.reason);
+			this.cancelReason = new CancelError(
+				formatCancelMessage(this.name, signal.reason),
+				signal.reason,
+			);
 		});
 	}
 
@@ -225,4 +233,15 @@ export class CancellableToken {
 			};
 		}
 	}
+}
+
+function formatCancelMessage(name: string | undefined, reason: unknown) {
+	const label = name?.trim() ? `[${name}]` : "[cancellable]";
+	if (typeof reason === "string" && reason.trim()) {
+		return `${label} cancelled: ${reason}`;
+	}
+	if (reason instanceof Error && reason.message.trim()) {
+		return `${label} cancelled: ${reason.message}`;
+	}
+	return `${label} cancelled`;
 }

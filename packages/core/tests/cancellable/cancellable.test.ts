@@ -34,6 +34,11 @@ describe("cancellable", () => {
 			});
 			await expect(handle.promise).rejects.toThrow("task error");
 		});
+
+		test("should expose handle name", () => {
+			const handle = cancellable(async () => 42, { name: "fetch-user" });
+			expect(handle.name).toBe("fetch-user");
+		});
 	});
 
 	describe("cancellation", () => {
@@ -60,6 +65,18 @@ describe("cancellable", () => {
 			}
 		});
 
+		test("should include task name in cancel message", async () => {
+			const handle = cancellable(
+				async (token) => {
+					await token.sleep(1000);
+					return 42;
+				},
+				{ name: "fetch-user" },
+			);
+			handle.cancel("custom reason");
+			await expect(handle.promise).rejects.toThrow("[fetch-user] cancelled");
+		});
+
 		test("should respect external signal", async () => {
 			const externalController = new AbortController();
 			const handle = cancellable(
@@ -71,6 +88,23 @@ describe("cancellable", () => {
 			);
 			externalController.abort("external cancel");
 			await expect(handle.promise).rejects.toThrow(CancelError);
+		});
+
+		test("should include task name in timeout cancel message", async () => {
+			vi.useFakeTimers();
+			const handle = cancellable(
+				async (token) => {
+					await token.sleep(1000);
+					return 42;
+				},
+				{ name: "fetch-user", timeout: 10 },
+			);
+			const assertion = expect(handle.promise).rejects.toThrow(
+				"[fetch-user] timeout after 10ms",
+			);
+			await vi.advanceTimersByTimeAsync(10);
+			await assertion;
+			vi.useRealTimers();
 		});
 	});
 

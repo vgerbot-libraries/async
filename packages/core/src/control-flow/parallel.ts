@@ -37,6 +37,10 @@ export function parallel(
 	...tasks: AsyncTask<unknown>[]
 ) {
 	const { concurrency = Infinity } = options;
+	const resolvedOptions: ParallelOptions = {
+		...options,
+		name: options.name ?? "parallel",
+	};
 	return cancellable(async (token) => {
 		if (isFinite(concurrency)) {
 			return runWithConcurrency(tasks, concurrency, (task) => {
@@ -48,7 +52,7 @@ export function parallel(
 			});
 			return Promise.all(promises);
 		}
-	}, options);
+	}, resolvedOptions);
 }
 
 /**

@@ -73,7 +73,12 @@ export function auto<TTasks extends AutoTasks>(
 	options?: AutoOptions<AutoResult<TTasks>>,
 ): CancellableHandle<AutoResult<TTasks>> {
 	const { concurrency = Infinity } = options ?? {};
+	const resolvedOptions: AutoOptions<AutoResult<TTasks>> = {
+		...options,
+		name: options?.name ?? "auto",
+	};
 	return cancellable(async (token) => {
+		const autoName = token.name ?? "auto";
 		const parsed = parseTasks(tasks);
 		validateDependencies(parsed);
 
@@ -88,13 +93,14 @@ export function auto<TTasks extends AutoTasks>(
 
 		const scheduleTask = (name: string) => {
 			const parsedTask = parsed[name] as ParsedTask;
+			const taskName = `${autoName}.${name}`;
 			const run = async () => {
 				try {
 					const value = await parsedTask.run(results, token);
 					results[name] = value;
 				} catch (error) {
 					if (firstError === undefined) {
-						firstError = error;
+						firstError = prefixErrorMessage(taskName, error);
 					}
 				} finally {
 					active.delete(name);
@@ -139,7 +145,15 @@ export function auto<TTasks extends AutoTasks>(
 		}
 
 		return results as AutoResult<TTasks>;
-	}, options);
+	}, resolvedOptions);
+}
+
+function prefixErrorMessage(taskName: string, error: unknown) {
+	if (error instanceof Error) {
+		error.message = `[${taskName}] ${error.message}`;
+		return error;
+	}
+	return new Error(`[${taskName}] ${String(error)}`);
 }
 
 function parseTasks(tasks: AutoTasks): Record<string, ParsedTask> {
