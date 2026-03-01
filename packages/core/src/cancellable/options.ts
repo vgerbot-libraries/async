@@ -37,6 +37,13 @@ export interface CancellableOptions<T = unknown> {
 	/** External AbortSignal to link with the task's cancellation */
 	signal?: AbortSignal;
 	/**
+	 * Callback invoked when the task is cancelled.
+	 * Receives the resolved CancelError (or null if unavailable).
+	 */
+	onCancel?: (
+		error: import("./CancelError").CancelError | null,
+	) => void | Promise<void>;
+	/**
 	 * Fallback value/provider used when the task rejects.
 	 * Receives the original error and whether it was caused by cancellation.
 	 */
@@ -46,6 +53,19 @@ export interface CancellableOptions<T = unknown> {
 		| ((error: unknown, isCancelled: boolean) => Promise<T>);
 	/** Retry configuration for the task */
 	retry?: RetryOptions;
+	/**
+	 * Callback invoked right before waiting for a retry attempt.
+	 */
+	onRetry?: (info: {
+		/** Current failed attempt number (1-indexed) */
+		attempt: number;
+		/** Maximum configured attempts */
+		maxAttempts: number;
+		/** Error that triggered the retry */
+		error: Error;
+		/** Delay before the next attempt in milliseconds */
+		waitMs: number;
+	}) => void | Promise<void>;
 	/**
 	 * Timeout in milliseconds. The task will be automatically cancelled
 	 * after this duration with a "Timeout" cancel reason.

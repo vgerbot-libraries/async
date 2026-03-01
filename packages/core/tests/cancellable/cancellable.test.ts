@@ -106,6 +106,21 @@ describe("cancellable", () => {
 			await assertion;
 			vi.useRealTimers();
 		});
+
+		test("should call onCancel with CancelError", async () => {
+			const onCancel = vi.fn();
+			const handle = cancellable(
+				async (token) => {
+					await token.sleep(1000);
+					return 42;
+				},
+				{ onCancel },
+			);
+			handle.cancel("user cancelled");
+			await expect(handle.promise).rejects.toThrow(CancelError);
+			expect(onCancel).toHaveBeenCalledTimes(1);
+			expect(onCancel.mock.calls[0]?.[0]).toBeInstanceOf(CancelError);
+		});
 	});
 
 	describe("fallback", () => {
@@ -324,6 +339,44 @@ describe("cancellable", () => {
 			handle.cancel();
 			await expect(promise).rejects.toThrow(CancelError);
 			expect(attempts).toBe(1);
+		});
+
+		test("should call onRetry with retry context", async () => {
+			let attempts = 0;
+			const onRetry = vi.fn();
+			const handle = cancellable(
+				async () => {
+					attempts++;
+					if (attempts < 3) {
+						throw new Error(`retry me ${attempts}`);
+					}
+					return 42;
+				},
+				{ retry: { maxAttempts: 3, delay: 100 }, onRetry },
+			);
+
+			const promise = handle.promise;
+			await vi.advanceTimersByTimeAsync(100);
+			await vi.advanceTimersByTimeAsync(100);
+			await expect(promise).resolves.toBe(42);
+
+			expect(onRetry).toHaveBeenCalledTimes(2);
+			expect(onRetry).toHaveBeenNthCalledWith(
+				1,
+				expect.objectContaining({
+					attempt: 1,
+					maxAttempts: 3,
+					waitMs: 100,
+				}),
+			);
+			expect(onRetry).toHaveBeenNthCalledWith(
+				2,
+				expect.objectContaining({
+					attempt: 2,
+					maxAttempts: 3,
+					waitMs: 100,
+				}),
+			);
 		});
 	});
 

@@ -58,7 +58,8 @@ export function cancellable<T>(
 	asyncTask: (token: CancellableToken) => Promise<T>,
 	options?: CancellableOptions<T>,
 ): CancellableHandle<T> {
-	const { name, signal, fallback, retry, timeout } = options ?? {};
+	const { name, signal, fallback, retry, timeout, onCancel, onRetry } =
+		options ?? {};
 	const label = name?.trim() ? `[${name}]` : "[cancellable]";
 	const isFallbackFactory = (
 		value: CancellableOptions<T>["fallback"],
@@ -85,6 +86,7 @@ export function cancellable<T>(
 
 	token.onCancel((reason) => {
 		handle[CANCEL_REASON] = reason;
+		Promise.resolve(onCancel?.(reason));
 	});
 
 	async function executeWithRetry(): Promise<T> {
@@ -125,6 +127,12 @@ export function cancellable<T>(
 
 				if (shouldRetry) {
 					const waitMs = calculateDelay(attempt, error as Error);
+					await onRetry?.({
+						attempt,
+						maxAttempts,
+						error: error as Error,
+						waitMs,
+					});
 
 					if (waitMs > 0) {
 						await token.sleep(waitMs);
