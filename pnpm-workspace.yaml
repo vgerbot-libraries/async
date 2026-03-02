@@ -15,7 +15,7 @@ catalog:
   '@vitest/ui': ^4.0.18
   glob: ^13.0.3
   jsdom: ^28.1.0
-  nyc: ^17.1.0
+  nyc: ^18.0.0
   prettier: ^3.6.2
   solid-js: ^1.9.11
   tsup: ^8.5.1
