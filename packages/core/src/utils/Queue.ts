@@ -1,6 +1,7 @@
 import { Defer } from "./Defer";
 
 /**
+ * @private
  * An async queue implementation with blocking dequeue support.
  * When the queue is empty, dequeue operations will wait until an item is available.
  */
