@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'apps/docs/**'
+      - 'docs/**'
 
 permissions:
   contents: read
@@ -43,7 +43,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/docs/site/dist
+          path: docs/site/dist
 
   deploy:
     environment:
