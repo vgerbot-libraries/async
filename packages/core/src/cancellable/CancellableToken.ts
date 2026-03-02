@@ -88,11 +88,11 @@ export class CancellableToken {
 	}
 
 	/**
-	 * Creates a cancellable sleep/delay promise.
-	 * The promise will be rejected if the token is cancelled during the sleep period.
+	 * Creates a cancellable sleep/delay.
+	 * The handle will be rejected if the token is cancelled during the sleep period.
 	 *
 	 * @param ms - The number of milliseconds to sleep
-	 * @returns A promise that resolves after the specified delay or rejects if cancelled
+	 * @returns A CancellableHandle that resolves after the specified delay, or can be cancelled independently of the parent token
 	 */
 	sleep(ms: number) {
 		return this.delay((callback) => {
@@ -104,11 +104,11 @@ export class CancellableToken {
 	}
 
 	/**
-	 * Creates a cancellable animation frame promise.
+	 * Creates a cancellable animation frame.
 	 * Uses requestAnimationFrame if available, otherwise falls back to setTimeout.
-	 * The promise will be rejected if the token is cancelled before the frame callback.
+	 * The handle will be rejected if the token is cancelled before the frame callback.
 	 *
-	 * @returns A promise that resolves on the next animation frame or rejects if cancelled
+	 * @returns A CancellableHandle that resolves on the next animation frame, or can be cancelled independently of the parent token
 	 */
 	frame() {
 		return this.delay((callback) => {
@@ -127,12 +127,16 @@ export class CancellableToken {
 	}
 
 	/**
-	 * Creates a cancellable delay promise using a custom scheduling function.
+	 * Creates a cancellable delay using a custom scheduling function.
 	 * The scheduling function receives a callback to invoke when the delay completes,
 	 * and must return a cleanup function to cancel the scheduled operation.
 	 *
+	 * The delay will stop when:
+	 * - The parent token is cancelled
+	 * - The returned handle is cancelled
+	 *
 	 * @param schedule - Function that schedules the delay and returns a cleanup function
-	 * @returns A promise that resolves when the delay completes or rejects if cancelled
+	 * @returns A CancellableHandle that resolves when the delay completes, or can be cancelled independently of the parent token
 	 *
 	 * @example
 	 * ```typescript
@@ -141,46 +145,128 @@ export class CancellableToken {
 	 *   const timer = setTimeout(done, 1000);
 	 *   return () => clearTimeout(timer);
 	 * });
+	 *
+	 * // Cancel independently
+	 * const handle = token.delay((done) => {
+	 *   const timer = setTimeout(done, 5000);
+	 *   return () => clearTimeout(timer);
+	 * });
+	 * handle.cancel();
 	 * ```
 	 */
 	delay(schedule: (done: () => void) => () => void) {
-		return new Promise<void>((resolve, reject) => {
-			if (this.isCancelled()) {
-				reject(this.rejectionError());
+		const abortController = new AbortController();
+		const handle = new CancellableHandle<void>(
+			abortController,
+			this.name ? `${this.name}>delay.handle` : "delay.handle",
+		);
+
+		if (this.isCancelled()) {
+			handle.reject(this.rejectionError());
+			return handle;
+		}
+
+		const onParentAbort = () => {
+			handle.cancel(this.currentCancelError());
+		};
+
+		const onHandleAbort = () => {
+			cancelScheduled();
+			this.signal.removeEventListener("abort", onParentAbort);
+			if (!handle.isSettled) {
+				const reason = handle.signal.reason;
+				handle.reject(
+					reason instanceof CancelError
+						? reason.withRejectionSite()
+						: CancelError.fromReason(
+								"delay cancelled",
+								reason,
+							).withRejectionSite(),
+				);
+			}
+		};
+
+		const cancelScheduled = schedule(() => {
+			this.signal.removeEventListener("abort", onParentAbort);
+			handle.signal.removeEventListener("abort", onHandleAbort);
+			if (handle.isSettled) {
 				return;
 			}
-
-			const listener = () => {
-				cleanup();
-				reject(this.rejectionError());
-			};
-
-			const cleanup = schedule(() => {
-				this.signal.removeEventListener("abort", listener);
-				if (this.isCancelled()) {
-					reject(this.rejectionError());
-				} else {
-					resolve();
-				}
-			});
-
-			this.signal.addEventListener("abort", listener);
+			if (this.isCancelled()) {
+				handle.reject(this.rejectionError());
+			} else {
+				handle.resolve();
+			}
 		});
+
+		this.signal.addEventListener("abort", onParentAbort);
+		handle.signal.addEventListener("abort", onHandleAbort);
+
+		return handle;
 	}
 
 	/**
-	 * Executes a function repeatedly at a specified interval until the token is cancelled.
-	 * The function can be synchronous or asynchronous.
+	 * Executes a function repeatedly at a specified interval until cancelled.
+	 * The function can be synchronous or asynchronous. Each execution waits for the
+	 * previous one to complete before scheduling the next interval delay.
 	 *
-	 * @param fn - The function to execute at each interval
-	 * @param interval - The interval in milliseconds between executions
-	 * @returns A promise that resolves when the token is cancelled
+	 * The interval will stop when:
+	 * - The parent token is cancelled
+	 * - The returned handle is cancelled
+	 * - The function throws an error (non-CancelError errors are wrapped)
+	 *
+	 * @param fn - The function to execute at each interval. Can return a Promise for async operations.
+	 * @param interval - The interval in milliseconds to wait between executions (after each execution completes)
+	 * @returns A CancellableHandle that can be used to cancel the interval independently of the parent token
+	 *
+	 * @example
+	 * ```typescript
+	 * // Poll an API every 5 seconds
+	 * const handle = token.interval(async () => {
+	 *   const data = await fetchData();
+	 *   processData(data);
+	 * }, 5000);
+	 *
+	 * // Cancel the interval independently
+	 * handle.cancel();
+	 * ```
 	 */
-	async interval(fn: () => void | Promise<void>, interval: number) {
-		while (!this.isCancelled()) {
-			await fn();
-			await this.sleep(interval);
-		}
+	interval(fn: () => void | Promise<void>, interval: number) {
+		const abortController = new AbortController();
+		const handle = new CancellableHandle<void>(
+			abortController,
+			this.name ? `${this.name}>interval.handle` : "interval.handle",
+		);
+
+		(async () => {
+			try {
+				while (!this.isCancelled() && !handle.isCancelled()) {
+					await fn();
+					if (this.isCancelled() || handle.isCancelled()) {
+						break;
+					}
+					await this.sleep(interval);
+				}
+				if (!handle.isSettled) {
+					const error =
+						this.cancelError ??
+						CancelError.fromReason("interval stopped", undefined);
+					handle.cancel(error);
+					handle.reject(error.withRejectionSite());
+				}
+			} catch (error) {
+				if (!handle.isSettled) {
+					const cancelError =
+						error instanceof CancelError
+							? error
+							: CancelError.fromReason("interval error", error);
+					handle.cancel(cancelError);
+					handle.reject(cancelError.withRejectionSite());
+				}
+			}
+		})();
+
+		return handle;
 	}
 
 	/**

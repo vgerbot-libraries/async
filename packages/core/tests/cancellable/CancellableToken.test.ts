@@ -167,17 +167,24 @@ describe("CancellableToken", () => {
 			vi.restoreAllMocks();
 		});
 
+		async function flushMicrotasks() {
+			for (let i = 0; i < 10; i++) await Promise.resolve();
+		}
+
 		test("should execute function repeatedly at interval", async () => {
 			const fn = vi.fn();
 			const intervalPromise = token.interval(fn, 100);
 
-			vi.advanceTimersByTime(100);
-			await Promise.resolve();
+			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(1);
 
 			vi.advanceTimersByTime(100);
-			await Promise.resolve();
+			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(2);
+
+			vi.advanceTimersByTime(100);
+			await flushMicrotasks();
+			expect(fn).toHaveBeenCalledTimes(3);
 
 			abortController.abort();
 			await expect(intervalPromise).rejects.toThrow(CancelError);
@@ -189,9 +196,12 @@ describe("CancellableToken", () => {
 			});
 			const intervalPromise = token.interval(fn, 100);
 
-			vi.advanceTimersByTime(100);
-			await Promise.resolve();
+			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(1);
+
+			vi.advanceTimersByTime(100);
+			await flushMicrotasks();
+			expect(fn).toHaveBeenCalledTimes(2);
 
 			abortController.abort();
 			await expect(intervalPromise).rejects.toThrow(CancelError);
@@ -201,15 +211,14 @@ describe("CancellableToken", () => {
 			const fn = vi.fn();
 			const intervalPromise = token.interval(fn, 100);
 
-			vi.advanceTimersByTime(100);
-			await Promise.resolve();
+			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(1);
 
 			abortController.abort();
 			await expect(intervalPromise).rejects.toThrow(CancelError);
 
 			vi.advanceTimersByTime(100);
-			await Promise.resolve();
+			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(1); // Should not increase
 		});
 	});
