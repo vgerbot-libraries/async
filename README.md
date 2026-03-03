@@ -5,8 +5,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/eeefd61dd6e5401ca936240a2c0384f5)](https://app.codacy.com/gh/vgerbot-libraries/async/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-Async is a TypeScript-first async utility library inspired by the ergonomics of `async.js` and `neo-async`.
-It focuses on typed collection helpers, control-flow primitives, queueing, and cancellation support.
+A TypeScript-first async utility library that provides typed collection helpers, control-flow primitives, queueing, and cancellation support for modern async workflows.
 
 ## Installation
 
