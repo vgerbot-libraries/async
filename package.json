@@ -11,6 +11,8 @@
         "test": "turbo run test",
         "test:projects": "vitest run",
         "test:projects:watch": "vitest --watch",
+        "changeset:version": "changeset version",
+        "changeset:publish": "changeset publish",
         "prepare": "simple-git-hooks",
         "docs:api": "turbo run docs:api"
     },

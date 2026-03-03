@@ -3,9 +3,10 @@ name: Deploy Documentation
 on:
   push:
     branches:
-      - main
-    paths:
-      - 'docs/**'
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -38,7 +39,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Documentation
-        run: pnpm turbo run build --filter=@repo/docs
+        run: |
+          pnpm docs:api
+          pnpm turbo run build --filter=@repo/docs
+          rm -rf docs/site/dist/api
+          cp -R docs/api docs/site/dist/api
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
