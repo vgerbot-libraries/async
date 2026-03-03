@@ -1,3 +1,4 @@
+export * from "./concat";
 export * from "./detect";
 export * from "./each";
 export * from "./every";
@@ -5,6 +6,10 @@ export * from "./filter";
 export * from "./groupBy";
 export * from "./map";
 export * from "./mapValues";
+export * from "./omit";
+export * from "./pick";
 export * from "./reduce";
 export * from "./reject";
 export * from "./some";
+export * from "./sortBy";
+export * from "./transform";

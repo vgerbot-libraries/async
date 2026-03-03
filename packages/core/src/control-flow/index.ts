@@ -6,4 +6,5 @@ export * from "./queue";
 export * from "./race";
 export * from "./series";
 export * from "./times";
+export * from "./waterfall";
 export * from "./whilst";
