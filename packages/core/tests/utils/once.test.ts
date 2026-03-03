@@ -50,7 +50,7 @@ describe("once", () => {
 			return "async result";
 		});
 
-		const [result1, result2] = await Promise.all([fn(), fn()]);
+		const [result1, result2] = await Promise.all([fn().promise, fn().promise]);
 
 		expect(count).toBe(1);
 		expect(result1).toBe("async result");

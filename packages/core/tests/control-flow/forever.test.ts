@@ -43,8 +43,9 @@ describe("forever", () => {
 
 	test("runs continuously until cancelled", async () => {
 		let count = 0;
-		const handle = forever(async () => {
+		const handle = forever(async (token) => {
 			count++;
+			await token.sleep(1); // Small delay to prevent blocking event loop
 		});
 
 		await new Promise((resolve) => setTimeout(resolve, 50));

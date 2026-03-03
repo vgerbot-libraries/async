@@ -58,5 +58,5 @@ export function throttle<T>(
 	throttled.flush = () => executor.flush();
 	throttled.pending = () => executor.pending;
 
-	return throttled;
+	return throttled as ThrottledFunction<T>;
 }

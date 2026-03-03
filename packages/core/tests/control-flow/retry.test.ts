@@ -53,7 +53,7 @@ describe("retry", () => {
 			},
 		);
 		await expect(handle.promise).rejects.toThrow();
-		expect(delays).toEqual([10, 20]); // 10 * 2^1, 10 * 2^2
+		expect(delays).toEqual([20, 40]); // 10 * 2^1, 10 * 2^2
 	});
 
 	test("respects retryIf predicate", async () => {

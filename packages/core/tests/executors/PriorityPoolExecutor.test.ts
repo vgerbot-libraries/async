@@ -6,12 +6,17 @@ describe("PriorityPoolExecutor", () => {
 		const executor = new PriorityPoolExecutor(1);
 		const order: string[] = [];
 
+		// First task starts immediately
 		const p1 = executor.execWithPriority(async (token) => {
 			await token.sleep(50);
-			order.push("low");
-			return "low";
+			order.push("first");
+			return "first";
 		}, 1);
 
+		// Wait a bit to ensure first task is running
+		await new Promise(resolve => setTimeout(resolve, 10));
+
+		// These will be queued
 		const p2 = executor.execWithPriority(async () => {
 			order.push("high");
 			return "high";
@@ -23,7 +28,7 @@ describe("PriorityPoolExecutor", () => {
 		}, 5);
 
 		await Promise.all([p1, p2, p3]);
-		expect(order).toEqual(["low", "high", "medium"]);
+		expect(order).toEqual(["first", "high", "medium"]);
 	});
 
 	test("respects concurrency limit", async () => {
@@ -52,11 +57,16 @@ describe("PriorityPoolExecutor", () => {
 		const executor = new PriorityPoolExecutor(1);
 		const order: string[] = [];
 
+		// First task starts immediately
 		executor.exec(async (token) => {
 			await token.sleep(50);
 			order.push("first");
 		});
 
+		// Wait to ensure first task is running
+		await new Promise((resolve) => setTimeout(resolve, 10));
+
+		// These will be queued
 		executor.execWithPriority(async () => {
 			order.push("high");
 		}, 5);

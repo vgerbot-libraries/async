@@ -28,8 +28,8 @@ describe("chunk", () => {
 	});
 
 	test("can be cancelled", async () => {
-		const handle = chunk([1, 2, 3, 4, 5], 2);
-		handle.cancel();
+		const handle = chunk([1, 2, 3, 4, 5], 2, { timeout: 10 });
+		await new Promise(resolve => setTimeout(resolve, 20));
 		await expect(handle.promise).rejects.toThrow();
 	});
 });

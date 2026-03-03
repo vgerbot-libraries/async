@@ -28,20 +28,28 @@ export function once<T>(
 ): () => CancellableHandle<T> {
 	let executed = false;
 	let cachedResult: T;
+	let inProgress: CancellableHandle<T> | undefined;
 
 	return () => {
 		if (executed) {
 			return cancellable(async () => cachedResult, options);
 		}
 
-		return cancellable(async (token) => {
+		if (inProgress) {
+			return inProgress;
+		}
+
+		inProgress = cancellable(async (token) => {
 			if (executed) {
 				return cachedResult;
 			}
 			const result = await fn(token);
 			executed = true;
 			cachedResult = result;
+			inProgress = undefined;
 			return result;
 		}, options);
+
+		return inProgress;
 	};
 }

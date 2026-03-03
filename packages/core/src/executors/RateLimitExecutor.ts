@@ -53,15 +53,16 @@ export class RateLimitExecutor implements ITaskExecutor {
 			);
 		}
 
+		// Record request before execution
+		this.recordRequest();
+
 		this.abortController = new AbortController();
 		const token = new CancellableToken(this.abortController.signal);
 
 		try {
 			const result = await task(token);
-			this.recordRequest();
 			return result;
 		} catch (error) {
-			this.recordRequest();
 			throw error;
 		}
 	}

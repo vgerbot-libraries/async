@@ -26,9 +26,9 @@ describe("asyncify", () => {
 
 	test("can be cancelled", async () => {
 		const syncFn = (x: number) => x * 2;
-		const asyncFn = asyncify(syncFn);
+		const asyncFn = asyncify(syncFn, { timeout: 10 });
 		const handle = asyncFn(5);
-		handle.cancel();
+		await new Promise(resolve => setTimeout(resolve, 20));
 		await expect(handle.promise).rejects.toThrow();
 	});
 

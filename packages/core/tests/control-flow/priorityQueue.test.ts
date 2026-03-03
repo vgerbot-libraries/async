@@ -12,9 +12,12 @@ describe("priorityQueue", () => {
 			{ concurrency: 1 },
 		);
 
+		// Pause to prevent immediate execution
+		q.pause();
 		q.push("low", 1);
 		q.push("high", 10);
 		q.push("medium", 5);
+		q.resume();
 
 		await q.onIdle();
 		expect(order).toEqual(["high", "medium", "low"]);
@@ -30,9 +33,11 @@ describe("priorityQueue", () => {
 			{ concurrency: 1 },
 		);
 
+		q.pause();
 		q.push("a");
 		q.push("b", 5);
 		q.push("c");
+		q.resume();
 
 		await q.onIdle();
 		expect(order).toEqual(["b", "a", "c"]);
@@ -74,9 +79,11 @@ describe("priorityQueue", () => {
 			{ concurrency: 1 },
 		);
 
+		q.pause();
 		q.pushMany(["a", "b"], 1);
 		q.push("high", 10);
 		q.pushMany(["c", "d"], 5);
+		q.resume();
 
 		await q.onIdle();
 		expect(order[0]).toBe("high");
