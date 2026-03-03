@@ -42,8 +42,7 @@ jobs:
         run: |
           pnpm docs:api
           pnpm turbo run build --filter=@repo/docs
-          rm -rf docs/site/dist/api
-          cp -R docs/api docs/site/dist/api
+          cp -r docs/api docs/site/dist/api
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

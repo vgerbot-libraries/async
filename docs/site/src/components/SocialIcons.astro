@@ -1,0 +1,19 @@
+---
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+const apiPath = import.meta.env.BASE_URL + 'api/';
+---
+<a href={apiPath} class="api-link">API</a>
+<Default {...Astro.props} />
+
+<style>
+  .api-link {
+    font-size: var(--sl-text-base);
+    font-weight: 600;
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+    margin-right: 0.5rem;
+  }
+  .api-link:hover {
+    color: var(--sl-color-white);
+  }
+</style>
