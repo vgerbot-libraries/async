@@ -1,63 +1,37 @@
 /**
  * Error thrown when a cancellable task is cancelled.
- * Extends the standard Error class with an additional reason property.
+ *
  */
 export class CancelError extends Error {
-	public readonly rawReason: unknown;
-	public readonly rejectionStack?: string;
+	public readonly reason: unknown;
 
-	constructor(message: string, rawReason: unknown, rejectionStack?: string) {
-		super(message);
+	constructor(
+		message: string,
+		options?: { cause?: unknown; reason?: unknown },
+	) {
+		super(
+			message,
+			options?.cause !== undefined ? { cause: options.cause } : undefined,
+		);
 		this.name = "CancelError";
-		this.rawReason = rawReason;
-		this.rejectionStack = rejectionStack;
-		if (rawReason instanceof Error) {
-			(this as Error & { cause?: unknown }).cause = rawReason;
-		}
-		this.stack = this.buildStack();
+		this.reason = options?.reason;
 	}
 
-	get reason() {
-		return this.rawReason;
-	}
-
-	get reasonStack(): string | undefined {
-		return this.rawReason instanceof Error ? this.rawReason.stack : undefined;
+	get rawReason(): unknown {
+		return this.reason;
 	}
 
 	static fromReason(message: string, rawReason: unknown): CancelError {
-		return rawReason instanceof CancelError
-			? rawReason
-			: new CancelError(message, rawReason);
-	}
-
-	withRejectionSite(stack?: string): CancelError {
-		return new CancelError(
-			this.message,
-			this.rawReason,
-			stack ?? new Error("Cancel rejection boundary").stack ?? "",
-		);
-	}
-
-	private buildStack() {
-		let result = this.stack ?? "";
-		if (this.rejectionStack) {
-			result += `\n\n--- Cancellation rejection site ---\n${this.rejectionStack}`;
+		if (rawReason instanceof CancelError) {
+			return rawReason;
 		}
-		if (this.reasonStack) {
-			result += `\n\n--- Cancellation raw reason stack ---\n${this.reasonStack}`;
-		} else if (this.rawReason !== undefined) {
-			result += `\n\n--- Cancellation raw reason ---\n${stringifyReason(this.rawReason)}`;
-		}
-		return result;
+		return new CancelError(message, { cause: rawReason, reason: rawReason });
 	}
-}
 
-function stringifyReason(reason: unknown): string {
-	if (typeof reason === "string") return reason;
-	try {
-		return JSON.stringify(reason);
-	} catch {
-		return String(reason);
+	withRejectionSite(): CancelError {
+		return new CancelError(this.message, {
+			cause: this,
+			reason: this.reason,
+		});
 	}
 }

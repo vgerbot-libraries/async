@@ -449,8 +449,9 @@ describe("cancellable", () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
-				expect(cancelError.reasonStack).toBe(reason.stack);
-				expect(cancelError.rejectionStack).toBeTruthy();
+				const origin = cancelError.cause as CancelError;
+				expect(origin).toBeInstanceOf(CancelError);
+				expect(origin.cause).toBe(reason);
 			}
 		});
 

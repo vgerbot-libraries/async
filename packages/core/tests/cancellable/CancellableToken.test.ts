@@ -54,7 +54,7 @@ describe("CancellableToken", () => {
 			);
 		});
 
-		test("should preserve reason stack and attach throw-site stack", () => {
+		test("should chain cause through rejection site", () => {
 			const reason = new Error("cancel origin");
 			abortController.abort(reason);
 			try {
@@ -64,8 +64,9 @@ describe("CancellableToken", () => {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
 				expect(cancelError.reason).toBe(reason);
-				expect(cancelError.reasonStack).toBe(reason.stack);
-				expect(cancelError.rejectionStack).toContain("throwIfCancelled");
+				const origin = cancelError.cause as CancelError;
+				expect(origin).toBeInstanceOf(CancelError);
+				expect(origin.cause).toBe(reason);
 			}
 		});
 	});
@@ -86,7 +87,7 @@ describe("CancellableToken", () => {
 			await expect(wrapped).rejects.toThrow(CancelError);
 		});
 
-		test("should retain dual-stack diagnostics in wrapped rejection", async () => {
+		test("should chain cause through wrapped rejection", async () => {
 			const reason = new Error("cancel origin");
 			const promise = new Promise((resolve) => setTimeout(resolve, 50));
 			const wrapped = token.wrap(promise);
@@ -98,8 +99,9 @@ describe("CancellableToken", () => {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
 				expect(cancelError.reason).toBe(reason);
-				expect(cancelError.reasonStack).toBe(reason.stack);
-				expect(cancelError.rejectionStack).toContain("listener");
+				const origin = cancelError.cause as CancelError;
+				expect(origin).toBeInstanceOf(CancelError);
+				expect(origin.cause).toBe(reason);
 			}
 		});
 
