@@ -1,6 +1,5 @@
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
-import { ICancellable } from "../cancellable/ICancellable";
 import { CancellableOptions } from "../cancellable/options";
 import { Defer } from "../utils/Defer";
 
@@ -44,7 +43,11 @@ export interface QueueOptions extends CancellableOptions {
  * - Pending tasks are rejected with `CancelError`.
  * - Running tasks receive a cancelled token and may stop if they honor it.
  */
-export interface TaskQueue<T, R> extends ICancellable {
+export interface TaskQueue<T, R> {
+	/** Cancels the queue with an optional reason. */
+	cancel(reason?: unknown): void;
+	/** Returns true if the queue has been cancelled. */
+	isCancelled(): boolean;
 	/**
 	 * Enqueues a single task.
 	 * @returns A promise that resolves/rejects with the worker outcome for this task.

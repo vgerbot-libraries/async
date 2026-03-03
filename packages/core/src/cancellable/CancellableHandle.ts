@@ -1,7 +1,6 @@
 import { noop } from "../utils";
 import { Defer } from "../utils/Defer";
 import { CancelError } from "./CancelError";
-import { ICancellable } from "./ICancellable";
 import { CANCEL_REASON } from "./internal";
 
 /**
@@ -10,7 +9,7 @@ import { CANCEL_REASON } from "./internal";
  *
  * @template T - The type of the task result
  */
-export class CancellableHandle<T> extends Defer<T> implements ICancellable {
+export class CancellableHandle<T> extends Defer<T> {
 	[CANCEL_REASON]: CancelError | null = null;
 	public readonly name?: string;
 

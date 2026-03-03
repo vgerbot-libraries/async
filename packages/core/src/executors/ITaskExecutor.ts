@@ -1,10 +1,11 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { ICancellable } from "../cancellable/ICancellable";
 
 /**
  * Common interface for all task executors.
  * Provides a consistent API for submitting, cancelling, and querying tasks.
  */
-export interface ITaskExecutor extends ICancellable {
+export interface ITaskExecutor {
+	cancel(reason?: unknown): void;
+	isCancelled(): boolean;
 	exec<T>(task: AsyncTask<T>): PromiseLike<T>;
 }
