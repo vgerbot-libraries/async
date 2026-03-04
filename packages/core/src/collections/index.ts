@@ -1,4 +1,3 @@
-export * from "./chunk";
 export * from "./concat";
 export * from "./detect";
 export * from "./each";
@@ -15,9 +14,6 @@ export * from "./partition";
 export * from "./pick";
 export * from "./reduce";
 export * from "./reject";
-export * from "./setOps";
 export * from "./some";
 export * from "./sortBy";
 export * from "./transform";
-export * from "./uniq";
-export * from "./zip";
