@@ -122,13 +122,17 @@ describe("ThrottleTaskExecutor", () => {
 
 		expect(executor.pending).toBe(false);
 
-		executor.exec(async () => 42);
+		executor.exec(async () => 42); // Executes immediately (leading edge)
 
-		expect(executor.pending).toBe(true);
+		expect(executor.pending).toBe(false); // No queued task
+
+		executor.exec(async () => 43); // Queued (trailing edge)
+
+		expect(executor.pending).toBe(true); // Task is queued
 
 		vi.advanceTimersByTime(100);
 
-		expect(executor.pending).toBe(false);
+		expect(executor.pending).toBe(false); // Task executed
 	});
 
 	test("should pass token to task", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { priorityQueue } from "../../src/control-flow/priorityQueue";
+import { noop } from "../../src/utils";
 
 describe("priorityQueue", () => {
 	test("processes tasks by priority", async () => {
@@ -123,6 +124,8 @@ describe("priorityQueue", () => {
 		const p1 = q.push(1);
 		const p2 = q.push(2);
 		const p3 = q.push(3);
+
+		p1.catch(noop);
 
 		q.cancel();
 

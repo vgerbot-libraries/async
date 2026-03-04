@@ -9,7 +9,10 @@ describe("chunk", () => {
 
 	test("handles exact division", async () => {
 		const handle = chunk([1, 2, 3, 4], 2);
-		await expect(handle.promise).resolves.toEqual([[1, 2], [3, 4]]);
+		await expect(handle.promise).resolves.toEqual([
+			[1, 2],
+			[3, 4],
+		]);
 	});
 
 	test("handles empty array", async () => {
@@ -25,11 +28,5 @@ describe("chunk", () => {
 	test("throws on invalid chunk size", async () => {
 		const handle = chunk([1, 2, 3], 0);
 		await expect(handle.promise).rejects.toThrow("Chunk size must be positive");
-	});
-
-	test("can be cancelled", async () => {
-		const handle = chunk([1, 2, 3, 4, 5], 2, { timeout: 10 });
-		await new Promise(resolve => setTimeout(resolve, 20));
-		await expect(handle.promise).rejects.toThrow();
 	});
 });

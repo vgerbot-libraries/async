@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { PriorityPoolExecutor } from "../../src/executors/PriorityPoolExecutor";
+import { noop } from "../../src/utils";
 
 describe("PriorityPoolExecutor", () => {
 	test("executes tasks by priority", async () => {
@@ -14,7 +15,7 @@ describe("PriorityPoolExecutor", () => {
 		}, 1);
 
 		// Wait a bit to ensure first task is running
-		await new Promise(resolve => setTimeout(resolve, 10));
+		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		// These will be queued
 		const p2 = executor.execWithPriority(async () => {
@@ -82,13 +83,17 @@ describe("PriorityPoolExecutor", () => {
 	test("can be cancelled", async () => {
 		const executor = new PriorityPoolExecutor(1);
 
-		executor.exec(async (token) => {
+		const p1 = executor.exec(async (token) => {
 			await token.sleep(100);
 			return "first";
 		});
 
 		const p2 = executor.exec(async () => "second");
 		const p3 = executor.exec(async () => "third");
+
+		p1.catch(noop);
+		p2.catch(noop);
+		p3.catch(noop);
 
 		executor.cancel();
 

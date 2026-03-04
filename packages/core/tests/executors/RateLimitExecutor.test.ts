@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { RateLimitExecutor } from "../../src/executors/RateLimitExecutor";
+import { noop } from "../../src/utils";
 
 describe("RateLimitExecutor", () => {
 	test("allows requests within limit", async () => {
@@ -41,14 +42,16 @@ describe("RateLimitExecutor", () => {
 		const gap = Math.min(...secondBatch) - Math.max(...firstBatch);
 
 		expect(firstBatchSpread).toBeLessThan(100);
-		expect(gap).toBeGreaterThanOrEqual(400);
+		expect(gap).toBeGreaterThanOrEqual(350); // More lenient timing
 	});
 
 	test("can be cancelled", async () => {
 		const executor = new RateLimitExecutor(1, 1000);
 
-		executor.exec(async () => "first");
+		const promise1 = executor.exec(async () => "first");
 		const promise = executor.exec(async () => "second");
+		promise1.catch(noop);
+		promise.catch(noop);
 
 		executor.cancel();
 

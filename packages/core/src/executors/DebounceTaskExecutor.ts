@@ -102,7 +102,7 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 	}
 
 	get pending(): boolean {
-		return this.timerId !== undefined;
+		return this.pendingTask !== undefined;
 	}
 
 	// --------------- internal ---------------

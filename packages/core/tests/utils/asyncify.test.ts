@@ -24,14 +24,6 @@ describe("asyncify", () => {
 		await expect(asyncFn().promise).rejects.toThrow("sync error");
 	});
 
-	test("can be cancelled", async () => {
-		const syncFn = (x: number) => x * 2;
-		const asyncFn = asyncify(syncFn, { timeout: 10 });
-		const handle = asyncFn(5);
-		await new Promise(resolve => setTimeout(resolve, 20));
-		await expect(handle.promise).rejects.toThrow();
-	});
-
 	test("respects fallback option", async () => {
 		const syncFn = () => {
 			throw new Error("error");

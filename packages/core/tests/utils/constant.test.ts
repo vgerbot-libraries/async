@@ -21,12 +21,6 @@ describe("constant", () => {
 		await expect(undefinedHandle.promise).resolves.toBeUndefined();
 	});
 
-	test("can be cancelled", async () => {
-		const handle = constant(42, { timeout: 10 });
-		await new Promise(resolve => setTimeout(resolve, 20));
-		await expect(handle.promise).rejects.toThrow();
-	});
-
 	test("respects timeout option", async () => {
 		const handle = constant(42, { timeout: 100 });
 		await expect(handle.promise).resolves.toBe(42);

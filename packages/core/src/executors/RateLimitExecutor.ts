@@ -37,6 +37,7 @@ export class RateLimitExecutor implements ITaskExecutor {
 	private readonly maxRequests: number;
 	private readonly windowMs: number;
 	private abortController: AbortController | undefined;
+	private readonly waitQueue: Defer<void>[] = [];
 
 	constructor(maxRequests: number, windowMs: number) {
 		this.maxRequests = maxRequests;
@@ -44,7 +45,7 @@ export class RateLimitExecutor implements ITaskExecutor {
 	}
 
 	async exec<T>(task: AsyncTask<T>): Promise<T> {
-		await this.waitForSlot();
+		await this.acquireSlot();
 
 		if (this.isCancelled()) {
 			throw CancelError.fromReason(
@@ -53,17 +54,15 @@ export class RateLimitExecutor implements ITaskExecutor {
 			);
 		}
 
-		// Record request before execution
-		this.recordRequest();
-
 		this.abortController = new AbortController();
 		const token = new CancellableToken(this.abortController.signal);
 
 		try {
 			const result = await task(token);
 			return result;
-		} catch (error) {
-			throw error;
+		} finally {
+			// Release slot for next waiting request
+			this.releaseSlot();
 		}
 	}
 
@@ -72,27 +71,77 @@ export class RateLimitExecutor implements ITaskExecutor {
 			this.abortController = new AbortController();
 		}
 		this.abortController.abort(reason);
+
+		// Reject all waiting requests
+		while (this.waitQueue.length > 0) {
+			const defer = this.waitQueue.shift();
+			if (defer) {
+				defer.reject(
+					CancelError.fromReason("Rate limit executor cancelled", reason),
+				);
+			}
+		}
 	}
 
 	isCancelled(): boolean {
 		return this.abortController?.signal.aborted ?? false;
 	}
 
-	private async waitForSlot(): Promise<void> {
-		while (true) {
-			this.cleanOldTimestamps();
+	private async acquireSlot(): Promise<void> {
+		this.cleanOldTimestamps();
 
-			if (this.requestTimestamps.length < this.maxRequests) {
-				return;
+		// If we have capacity, record and proceed immediately
+		if (this.requestTimestamps.length < this.maxRequests) {
+			this.requestTimestamps.push(Date.now());
+			return;
+		}
+
+		// Otherwise, wait in queue
+		const defer = new Defer<void>();
+		this.waitQueue.push(defer);
+		await defer.promise;
+	}
+
+	private releaseSlot(): void {
+		// Process next waiting request if any
+		if (this.waitQueue.length === 0) {
+			return;
+		}
+
+		// Schedule processing after checking if slot is available
+		setTimeout(() => {
+			this.processNextInQueue();
+		}, 0);
+	}
+
+	private processNextInQueue(): void {
+		if (this.waitQueue.length === 0) {
+			return;
+		}
+
+		this.cleanOldTimestamps();
+
+		// If we have capacity now, release the next waiter
+		if (this.requestTimestamps.length < this.maxRequests) {
+			const defer = this.waitQueue.shift();
+			if (defer) {
+				this.requestTimestamps.push(Date.now());
+				defer.resolve();
 			}
+			return;
+		}
 
-			// Calculate wait time until oldest request expires
-			const oldestTimestamp = this.requestTimestamps[0]!;
-			const waitTime = this.windowMs - (Date.now() - oldestTimestamp);
+		// Calculate wait time until oldest request expires
+		const oldestTimestamp = this.requestTimestamps[0]!;
+		const waitTime = this.windowMs - (Date.now() - oldestTimestamp);
 
-			if (waitTime > 0) {
-				await new Promise((resolve) => setTimeout(resolve, waitTime));
-			}
+		if (waitTime > 0) {
+			setTimeout(() => {
+				this.processNextInQueue();
+			}, waitTime);
+		} else {
+			// Should have capacity now, try again
+			this.processNextInQueue();
 		}
 	}
 
@@ -105,9 +154,5 @@ export class RateLimitExecutor implements ITaskExecutor {
 		) {
 			this.requestTimestamps.shift();
 		}
-	}
-
-	private recordRequest(): void {
-		this.requestTimestamps.push(Date.now());
 	}
 }
