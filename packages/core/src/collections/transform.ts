@@ -103,7 +103,7 @@ export function transform<I, R>(
 			accumulator !== undefined
 				? accumulator
 				: normalized.isArray
-					? []
+					? ([] as R)
 					: ({} as R);
 
 		const arrayIteratee = iteratee as unknown as (
@@ -126,11 +126,11 @@ export function transform<I, R>(
 		};
 
 		if (isFinite(concurrency)) {
-			await runWithConcurrency(entries, concurrency, (entry) => {
-				return invoke(entry.value, entry.key);
+			await runWithConcurrency(entries, concurrency, async (entry) => {
+				return await invoke(entry.value, entry.key);
 			});
 		} else {
-			await Promise.all(entries.map((entry) => invoke(entry.value, entry.key)));
+			await Promise.all(entries.map(async (entry) => await invoke(entry.value, entry.key)));
 		}
 
 		return acc;

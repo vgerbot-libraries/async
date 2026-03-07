@@ -6,8 +6,8 @@ import {
 } from "../cancellable";
 import { runWithConcurrency } from "../utils/concurrency";
 
-export interface OmitOptions
-	extends CancellableOptions<Record<string, unknown>> {
+export interface OmitOptions<T = unknown>
+	extends CancellableOptions<Record<string, T>> {
 	concurrency?: number;
 }
 
@@ -43,7 +43,7 @@ export function omit<T>(
 		key: string,
 		token: CancellableToken,
 	) => Promise<boolean>,
-	options?: OmitOptions,
+	options?: OmitOptions<T>,
 ): CancellableHandle<Record<string, T>> {
 	const { concurrency = Infinity } = options ?? {};
 
@@ -65,8 +65,11 @@ export function omit<T>(
 		const result: Record<string, T> = {};
 		for (let i = 0; i < entries.length; i++) {
 			if (!flags[i]) {
-				const [key, value] = entries[i];
-				result[key] = value;
+				const entry = entries[i];
+				if (entry) {
+					const [key, value] = entry;
+					result[key] = value;
+				}
 			}
 		}
 

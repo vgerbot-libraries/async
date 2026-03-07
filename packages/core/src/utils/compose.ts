@@ -65,8 +65,11 @@ export function compose(
 			let result = input;
 			// Execute right to left
 			for (let i = fns.length - 1; i >= 0; i--) {
-				result = await fns[i](result, token);
-				token.throwIfCancelled();
+				const fn = fns[i];
+				if (fn) {
+					result = await fn(result, token);
+					token.throwIfCancelled();
+				}
 			}
 			return result;
 		}, resolvedOptions);

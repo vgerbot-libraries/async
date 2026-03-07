@@ -15,38 +15,56 @@ type WaterfallTask<TInput = unknown, TOutput = unknown> = (
  * Executes a single task in waterfall with cancellation support.
  */
 export function waterfall<T1>(
-	task1: WaterfallTask<void, T1>,
-	options?: CancellableOptions,
+	task1: WaterfallTask<unknown, T1>,
+): CancellableHandle<T1>;
+export function waterfall<T1>(
+	task1: WaterfallTask<unknown, T1>,
+	options: CancellableOptions,
 ): CancellableHandle<T1>;
 
 /**
  * Executes two tasks in waterfall, passing the output of the first as input to the second.
  */
 export function waterfall<T1, T2>(
-	task1: WaterfallTask<void, T1>,
+	task1: WaterfallTask<unknown, T1>,
 	task2: WaterfallTask<T1, T2>,
-	options?: CancellableOptions,
+): CancellableHandle<T2>;
+export function waterfall<T1, T2>(
+	task1: WaterfallTask<unknown, T1>,
+	task2: WaterfallTask<T1, T2>,
+	options: CancellableOptions,
 ): CancellableHandle<T2>;
 
 /**
  * Executes three tasks in waterfall, chaining their outputs.
  */
 export function waterfall<T1, T2, T3>(
-	task1: WaterfallTask<void, T1>,
+	task1: WaterfallTask<unknown, T1>,
 	task2: WaterfallTask<T1, T2>,
 	task3: WaterfallTask<T2, T3>,
-	options?: CancellableOptions,
+): CancellableHandle<T3>;
+export function waterfall<T1, T2, T3>(
+	task1: WaterfallTask<unknown, T1>,
+	task2: WaterfallTask<T1, T2>,
+	task3: WaterfallTask<T2, T3>,
+	options: CancellableOptions,
 ): CancellableHandle<T3>;
 
 /**
  * Executes four tasks in waterfall, chaining their outputs.
  */
 export function waterfall<T1, T2, T3, T4>(
-	task1: WaterfallTask<void, T1>,
+	task1: WaterfallTask<unknown, T1>,
 	task2: WaterfallTask<T1, T2>,
 	task3: WaterfallTask<T2, T3>,
 	task4: WaterfallTask<T3, T4>,
-	options?: CancellableOptions,
+): CancellableHandle<T4>;
+export function waterfall<T1, T2, T3, T4>(
+	task1: WaterfallTask<unknown, T1>,
+	task2: WaterfallTask<T1, T2>,
+	task3: WaterfallTask<T2, T3>,
+	task4: WaterfallTask<T3, T4>,
+	options: CancellableOptions,
 ): CancellableHandle<T4>;
 
 /**
@@ -91,7 +109,7 @@ export function waterfall<T1, T2, T3, T4>(
  * ```
  */
 export function waterfall(
-	task1: WaterfallTask<void, unknown>,
+	task1: WaterfallTask<unknown, unknown>,
 	...args: (WaterfallTask<unknown, unknown> | CancellableOptions)[]
 ): CancellableHandle<unknown> {
 	// Extract options if last argument is an options object
@@ -120,9 +138,9 @@ export function waterfall(
 	};
 
 	return cancellable(async (token) => {
-		let result: unknown;
+		let result: unknown = undefined;
 		for (const task of tasks) {
-			result = await task(result as void & unknown, token);
+			result = await task(result, token);
 			token.throwIfCancelled();
 		}
 		return result;

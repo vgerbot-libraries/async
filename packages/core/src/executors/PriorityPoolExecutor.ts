@@ -12,6 +12,89 @@ interface PriorityQueuedTask {
 }
 
 /**
+ * Max-heap priority queue implementation for task scheduling.
+ * Higher priority values are dequeued first.
+ */
+class PriorityQueue<T extends { priority: number }> {
+	private heap: T[] = [];
+
+	get size(): number {
+		return this.heap.length;
+	}
+
+	enqueue(item: T): void {
+		this.heap.push(item);
+		this.bubbleUp(this.heap.length - 1);
+	}
+
+	dequeue(): T | undefined {
+		if (this.heap.length === 0) return undefined;
+		if (this.heap.length === 1) return this.heap.pop();
+
+		const top = this.heap[0];
+		this.heap[0] = this.heap.pop()!;
+		this.bubbleDown(0);
+		return top;
+	}
+
+	clear(): T[] {
+		return this.heap.splice(0);
+	}
+
+	private bubbleUp(index: number): void {
+		while (index > 0) {
+			const parentIndex = Math.floor((index - 1) / 2);
+			const current = this.heap[index];
+			const parent = this.heap[parentIndex];
+			if (!current || !parent || current.priority <= parent.priority) break;
+
+			this.heap[index] = parent;
+			this.heap[parentIndex] = current;
+			index = parentIndex;
+		}
+	}
+
+	private bubbleDown(index: number): void {
+		while (true) {
+			const leftChild = 2 * index + 1;
+			const rightChild = 2 * index + 2;
+			let largest = index;
+
+			const current = this.heap[index];
+			const left = this.heap[leftChild];
+			const right = this.heap[rightChild];
+
+			if (
+				left &&
+				current &&
+				left.priority > current.priority
+			) {
+				largest = leftChild;
+			}
+
+			const largestItem = this.heap[largest];
+			if (
+				right &&
+				largestItem &&
+				right.priority > largestItem.priority
+			) {
+				largest = rightChild;
+			}
+
+			if (largest === index) break;
+
+			const temp = this.heap[index];
+			const swap = this.heap[largest];
+			if (temp && swap) {
+				this.heap[index] = swap;
+				this.heap[largest] = temp;
+			}
+			index = largest;
+		}
+	}
+}
+
+/**
  * A task executor that processes tasks with priority support.
  * Tasks with higher priority values are executed first.
  * Extends PoolTaskExecutor with priority-based scheduling.
@@ -31,7 +114,7 @@ interface PriorityQueuedTask {
  * ```
  */
 export class PriorityPoolExecutor extends BaseTaskExecutor {
-	private readonly pending: PriorityQueuedTask[] = [];
+	private readonly pending = new PriorityQueue<PriorityQueuedTask>();
 	private readonly workers: CancellableHandle<void>[];
 
 	constructor(concurrency: number) {
@@ -65,14 +148,11 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 		this.checkCancelled("Priority pool executor permanently cancelled");
 
 		const defer = new Defer<T>();
-		this.pending.push({
+		this.pending.enqueue({
 			task: task as AsyncTask<unknown>,
 			defer: defer as Defer<unknown>,
 			priority,
 		});
-
-		// Sort by priority (higher first)
-		this.pending.sort((a, b) => b.priority - a.priority);
 
 		return defer.promise;
 	}
@@ -81,7 +161,7 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 		for (const handle of this.workers) {
 			handle.cancel(reason);
 		}
-		for (const item of this.pending.splice(0)) {
+		for (const item of this.pending.clear()) {
 			item.defer.reject(
 				CancelError.fromReason("Priority pool executor cancelled", reason),
 			);
@@ -90,8 +170,9 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 
 	private async dequeue(): Promise<PriorityQueuedTask | undefined> {
 		while (!this.isCancelled()) {
-			if (this.pending.length > 0) {
-				return this.pending.shift();
+			const item = this.pending.dequeue();
+			if (item) {
+				return item;
 			}
 			await new Promise((resolve) => setTimeout(resolve, 10));
 		}

@@ -113,8 +113,8 @@ export function sortBy<I, K extends string | number>(
 		}));
 
 		paired.sort((a, b) => {
-			if (a.sortKey < b.sortKey) return -1;
-			if (a.sortKey > b.sortKey) return 1;
+			if (a.sortKey! < b.sortKey!) return -1;
+			if (a.sortKey! > b.sortKey!) return 1;
 			return 0;
 		});
 

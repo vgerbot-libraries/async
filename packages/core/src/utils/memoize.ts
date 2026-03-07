@@ -70,14 +70,14 @@ export function memoize<TArgs extends unknown[], TResult>(
 
 		if (cache.has(key)) {
 			const cachedValue = cache.get(key) as TResult;
-			return cancellable(async () => cachedValue, cancellableOptions);
+			return cancellable(async () => cachedValue, cancellableOptions) as CancellableHandle<TResult>;
 		}
 
 		return cancellable(async (token) => {
 			const result = await fn(...args, token);
 			cache.set(key, result);
 			return result;
-		}, cancellableOptions);
+		}, cancellableOptions) as CancellableHandle<TResult>;
 	};
 
 	memoized.cache = cache;
