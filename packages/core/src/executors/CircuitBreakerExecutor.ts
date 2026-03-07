@@ -1,7 +1,6 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { BaseTaskExecutor } from "./BaseTaskExecutor";
 
 /**
  * Circuit breaker states.
@@ -51,30 +50,27 @@ export interface CircuitBreakerOptions {
  * }
  * ```
  */
-export class CircuitBreakerExecutor implements ITaskExecutor {
+export class CircuitBreakerExecutor extends BaseTaskExecutor {
 	private state: CircuitState = "CLOSED";
 	private failureCount = 0;
 	private successCount = 0;
 	private nextAttempt = 0;
-	private abortController: AbortController | undefined;
+	private currentAbortController: AbortController | undefined;
 
 	private readonly failureThreshold: number;
 	private readonly resetTimeout: number;
 	private readonly halfOpenRequests: number;
 
 	constructor(options: CircuitBreakerOptions) {
+		super();
 		this.failureThreshold = options.failureThreshold;
 		this.resetTimeout = options.resetTimeout;
 		this.halfOpenRequests = options.halfOpenRequests ?? 1;
 	}
 
 	async exec<T>(task: AsyncTask<T>): Promise<T> {
-		if (this.isCancelled()) {
-			throw CancelError.fromReason(
-				"Circuit breaker cancelled",
-				this.abortController?.signal.reason,
-			);
-		}
+		// Check permanent cancellation state first
+		this.checkCancelled("Circuit breaker executor permanently cancelled");
 
 		// Check if we should transition from OPEN to HALF_OPEN
 		if (this.state === "OPEN" && Date.now() >= this.nextAttempt) {
@@ -89,8 +85,10 @@ export class CircuitBreakerExecutor implements ITaskExecutor {
 			);
 		}
 
-		this.abortController = new AbortController();
-		const token = new CancellableToken(this.abortController.signal);
+		// Create a new AbortController for this specific task execution
+		const abortController = new AbortController();
+		this.currentAbortController = abortController;
+		const token = new CancellableToken(abortController.signal);
 
 		try {
 			const result = await task(token);
@@ -99,18 +97,20 @@ export class CircuitBreakerExecutor implements ITaskExecutor {
 		} catch (error) {
 			this.onFailure();
 			throw error;
+		} finally {
+			// Clear reference if this is still the current controller
+			if (this.currentAbortController === abortController) {
+				this.currentAbortController = undefined;
+			}
 		}
 	}
 
-	cancel(reason?: unknown) {
-		if (!this.abortController) {
-			this.abortController = new AbortController();
-		}
-		this.abortController.abort(reason);
-	}
-
-	isCancelled(): boolean {
-		return this.abortController?.signal.aborted ?? false;
+	/**
+	 * Hook called when executor is cancelled.
+	 * Aborts the currently executing task if any.
+	 */
+	protected onCancel(reason?: unknown): void {
+		this.currentAbortController?.abort(reason);
 	}
 
 	/**

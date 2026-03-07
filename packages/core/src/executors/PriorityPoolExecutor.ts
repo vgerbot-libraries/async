@@ -3,7 +3,7 @@ import { CancelError } from "../cancellable/CancelError";
 import { CancellableHandle } from "../cancellable/CancellableHandle";
 import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../utils/Defer";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { BaseTaskExecutor } from "./BaseTaskExecutor";
 
 interface PriorityQueuedTask {
 	task: AsyncTask<unknown>;
@@ -30,15 +30,15 @@ interface PriorityQueuedTask {
  * // Executes in order: high (10), medium (5), low (1)
  * ```
  */
-export class PriorityPoolExecutor implements ITaskExecutor {
+export class PriorityPoolExecutor extends BaseTaskExecutor {
 	private readonly pending: PriorityQueuedTask[] = [];
 	private readonly workers: CancellableHandle<void>[];
-	private cancelled = false;
 
 	constructor(concurrency: number) {
+		super();
 		this.workers = Array.from({ length: concurrency }, () =>
 			cancellable(async (token) => {
-				while (!this.cancelled) {
+				while (!this.isCancelled()) {
 					const item = await this.dequeue();
 					if (item) {
 						try {
@@ -62,11 +62,7 @@ export class PriorityPoolExecutor implements ITaskExecutor {
 	}
 
 	execWithPriority<T>(task: AsyncTask<T>, priority: number): Promise<T> {
-		if (this.cancelled) {
-			return Promise.reject(
-				CancelError.fromReason("Priority pool executor cancelled"),
-			);
-		}
+		this.checkCancelled("Priority pool executor permanently cancelled");
 
 		const defer = new Defer<T>();
 		this.pending.push({
@@ -81,8 +77,7 @@ export class PriorityPoolExecutor implements ITaskExecutor {
 		return defer.promise;
 	}
 
-	cancel(reason?: unknown) {
-		this.cancelled = true;
+	protected onCancel(reason?: unknown): void {
 		for (const handle of this.workers) {
 			handle.cancel(reason);
 		}
@@ -93,12 +88,8 @@ export class PriorityPoolExecutor implements ITaskExecutor {
 		}
 	}
 
-	isCancelled(): boolean {
-		return this.cancelled;
-	}
-
 	private async dequeue(): Promise<PriorityQueuedTask | undefined> {
-		while (!this.cancelled) {
+		while (!this.isCancelled()) {
 			if (this.pending.length > 0) {
 				return this.pending.shift();
 			}

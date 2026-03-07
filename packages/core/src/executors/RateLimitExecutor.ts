@@ -2,7 +2,7 @@ import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../utils/Defer";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { BaseTaskExecutor } from "./BaseTaskExecutor";
 
 /**
  * Configuration options for RateLimitExecutor.
@@ -32,7 +32,7 @@ export interface RateLimitOptions {
  * // First 10 execute immediately, next 10 wait for the window to reset
  * ```
  */
-export class RateLimitExecutor implements ITaskExecutor {
+export class RateLimitExecutor extends BaseTaskExecutor {
 	private readonly requestTimestamps: number[] = [];
 	private readonly maxRequests: number;
 	private readonly windowMs: number;
@@ -40,19 +40,15 @@ export class RateLimitExecutor implements ITaskExecutor {
 	private readonly waitQueue: Defer<void>[] = [];
 
 	constructor(maxRequests: number, windowMs: number) {
+		super();
 		this.maxRequests = maxRequests;
 		this.windowMs = windowMs;
 	}
 
 	async exec<T>(task: AsyncTask<T>): Promise<T> {
-		await this.acquireSlot();
+		this.checkCancelled("Rate limit executor permanently cancelled");
 
-		if (this.isCancelled()) {
-			throw CancelError.fromReason(
-				"Rate limit executor cancelled",
-				this.abortController?.signal.reason,
-			);
-		}
+		await this.acquireSlot();
 
 		this.abortController = new AbortController();
 		const token = new CancellableToken(this.abortController.signal);
@@ -66,7 +62,7 @@ export class RateLimitExecutor implements ITaskExecutor {
 		}
 	}
 
-	cancel(reason?: unknown) {
+	protected onCancel(reason?: unknown): void {
 		if (!this.abortController) {
 			this.abortController = new AbortController();
 		}
@@ -81,10 +77,6 @@ export class RateLimitExecutor implements ITaskExecutor {
 				);
 			}
 		}
-	}
-
-	isCancelled(): boolean {
-		return this.abortController?.signal.aborted ?? false;
 	}
 
 	private async acquireSlot(): Promise<void> {

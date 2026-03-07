@@ -3,7 +3,7 @@ import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../utils/Defer";
 import { noop } from "../utils/noop";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { BaseTaskExecutor } from "./BaseTaskExecutor";
 
 export interface DebounceOptions {
 	leading?: boolean;
@@ -21,7 +21,7 @@ export interface DebounceOptions {
  * @param options.trailing - Invoke on the trailing edge (after silence). Default `true`.
  * @param options.maxWait - Maximum time a task can be delayed before forced invocation.
  */
-export class DebounceTaskExecutor implements ITaskExecutor {
+export class DebounceTaskExecutor extends BaseTaskExecutor {
 	private readonly leading: boolean;
 	private readonly trailing: boolean;
 	private readonly maxWait: number | undefined;
@@ -39,6 +39,7 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 		private readonly wait: number,
 		options?: DebounceOptions,
 	) {
+		super();
 		this.leading = options?.leading ?? false;
 		this.trailing = options?.trailing ?? true;
 		this.maxWait =
@@ -49,6 +50,8 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 	}
 
 	exec<T>(task: AsyncTask<T>): Defer<T> {
+		this.checkCancelled("Debounce executor permanently cancelled");
+
 		const time = Date.now();
 		const isInvoking = this.shouldInvoke(time);
 
@@ -80,7 +83,7 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 		return defer;
 	}
 
-	cancel(reason?: unknown) {
+	protected onCancel(reason?: unknown): void {
 		this.clearTimer();
 		this.supersedePending();
 		if (this.abortController) {
@@ -89,10 +92,6 @@ export class DebounceTaskExecutor implements ITaskExecutor {
 		}
 		this.lastInvokeTime = 0;
 		this.lastCallTime = undefined;
-	}
-
-	isCancelled(): boolean {
-		return this.abortController?.signal.aborted ?? true;
 	}
 
 	flush() {

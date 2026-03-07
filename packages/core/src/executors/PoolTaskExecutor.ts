@@ -4,7 +4,7 @@ import { CancellableHandle } from "../cancellable/CancellableHandle";
 import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../utils/Defer";
 import { Queue } from "../utils/Queue";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { BaseTaskExecutor } from "./BaseTaskExecutor";
 
 interface QueuedTask {
 	task: AsyncTask<unknown>;
@@ -15,11 +15,12 @@ interface QueuedTask {
  * A task executor that processes tasks with a specified maximum concurrency limit.
  * It uses a pool of workers to pull tasks from a queue as soon as a worker becomes available.
  */
-export class PoolTaskExecutor implements ITaskExecutor {
+export class PoolTaskExecutor extends BaseTaskExecutor {
 	private readonly queue = new Queue<QueuedTask | undefined>();
 	private readonly workers: CancellableHandle<void>[];
 
 	constructor(concurrency: number) {
+		super();
 		this.workers = Array.from({ length: concurrency }, () =>
 			cancellable(async (token) => {
 				while (!this.isCancelled()) {
@@ -42,6 +43,8 @@ export class PoolTaskExecutor implements ITaskExecutor {
 	}
 
 	exec<T>(task: AsyncTask<T>): Promise<T> {
+		this.checkCancelled("Pool executor permanently cancelled");
+
 		const defer = new Defer<T>();
 		this.queue.enqueue({
 			task: task as AsyncTask<unknown>,
@@ -50,9 +53,9 @@ export class PoolTaskExecutor implements ITaskExecutor {
 		return defer.promise;
 	}
 
-	cancel() {
+	protected onCancel(reason?: unknown): void {
 		for (const handle of this.workers) {
-			handle.cancel();
+			handle.cancel(reason);
 		}
 		while (true) {
 			const item = this.queue.dequeueNow();
@@ -60,18 +63,8 @@ export class PoolTaskExecutor implements ITaskExecutor {
 				break;
 			}
 			item.defer.reject(
-				CancelError.fromReason(
-					"[cancellable] cancelled: task executor cancelled",
-					"task executor cancelled",
-				),
+				CancelError.fromReason("Pool executor cancelled", reason),
 			);
 		}
-	}
-
-	isCancelled() {
-		if (!this.workers) {
-			return false;
-		}
-		return this.workers.length > 0 && (this.workers[0]?.isCancelled() ?? false);
 	}
 }

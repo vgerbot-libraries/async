@@ -1,3 +1,4 @@
+export * from "./BaseTaskExecutor";
 export * from "./CircuitBreakerExecutor";
 export * from "./DebounceTaskExecutor";
 export * from "./ITaskExecutor";
