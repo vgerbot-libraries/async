@@ -37,11 +37,15 @@ pnpm test
 - `filter`
 - `reject`
 - `detect`
+- `find`
+- `findIndex`
 - `some`
 - `every`
 - `reduce`
 - `groupBy`
 - `concat`
+- `flatMap`
+- `partition`
 - `sortBy`
 - `pick`
 - `omit`
@@ -63,6 +67,13 @@ pnpm test
 - `doUntil`
 - `auto`
 - `queue`
+- `priorityQueue`
+- `delay`
+- `timeout`
+- `retry`
+- `tryEach`
+- `reflect`
+- `forever`
 
 ### Cancellable
 
@@ -76,14 +87,25 @@ pnpm test
 - `DebounceTaskExecutor`
 - `ThrottleTaskExecutor`
 - `PoolTaskExecutor`
+- `PriorityPoolExecutor`
 - `SeriesTaskExecutor`
+- `RateLimitExecutor`
+- `CircuitBreakerExecutor`
 
 ### Utils
 
 - `Defer`
+- `Queue`
 - `memoize`
 - `compose`
 - `seq`
+- `asyncify`
+- `promisify`
+- `debounce`
+- `throttle`
+- `once`
+- `constant`
+- `cache`
 
 ## Usage
 
