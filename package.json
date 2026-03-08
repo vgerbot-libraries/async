@@ -28,6 +28,7 @@
         "@biomejs/biome": "catalog:",
         "@changesets/cli": "catalog:",
         "@repo/vitest-config": "workspace:*",
+        "@repo/biome-config": "workspace:*",
         "@types/node": "latest",
         "lint-staged": "^16.3.1",
         "prettier": "catalog:",

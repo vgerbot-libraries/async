@@ -1,10 +1,7 @@
 {
     "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+    "extends": ["@repo/biome-config/base"],
     "root": true,
-    "files": {
-        "ignoreUnknown": false,
-        "includes": ["**", "!.output", "!**/.output", "!.vinxi", "!**/.vinxi", "!dist", "!**/dist", "!docs"]
-    },
     "linter": {
         "enabled": true,
         "rules": {
