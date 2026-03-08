@@ -100,7 +100,6 @@ pnpm test
 - `compose`
 - `seq`
 - `asyncify`
-- `promisify`
 - `debounce`
 - `throttle`
 - `once`

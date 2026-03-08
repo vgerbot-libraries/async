@@ -8,6 +8,5 @@ export * from "./debounce";
 export * from "./memoize";
 export * from "./noop";
 export * from "./once";
-export * from "./promisify";
 export * from "./Queue";
 export * from "./throttle";
