@@ -1,4 +1,8 @@
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 
 /**
  * Returns a constant value wrapped in a cancellable promise.

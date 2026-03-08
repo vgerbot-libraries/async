@@ -3,10 +3,7 @@ import { flatMap } from "../../src/collections/flatMap";
 
 describe("flatMap", () => {
 	test("maps and flattens results", async () => {
-		const handle = flatMap(
-			[1, 2, 3],
-			async (num) => [num, num * 2],
-		);
+		const handle = flatMap([1, 2, 3], async (num) => [num, num * 2]);
 		await expect(handle.promise).resolves.toEqual([1, 2, 2, 4, 3, 6]);
 	});
 
@@ -23,10 +20,7 @@ describe("flatMap", () => {
 	});
 
 	test("handles empty arrays in results", async () => {
-		const handle = flatMap(
-			[1, 2, 3],
-			async (num) => (num === 2 ? [] : [num]),
-		);
+		const handle = flatMap([1, 2, 3], async (num) => (num === 2 ? [] : [num]));
 		await expect(handle.promise).resolves.toEqual([1, 3]);
 	});
 });

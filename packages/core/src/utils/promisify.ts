@@ -50,9 +50,9 @@ export function promisify<A1, A2, A3, T>(
 	) => void,
 ): (arg1: A1, arg2: A2, arg3: A3) => Promise<T>;
 export function promisify<T>(
-	fn: (...args: any[]) => void,
-): (...args: any[]) => Promise<T> {
-	return (...args: any[]): Promise<T> => {
+	fn: (...args: unknown[]) => void,
+): (...args: unknown[]) => Promise<T> {
+	return (...args: unknown[]): Promise<T> => {
 		return new Promise<T>((resolve, reject) => {
 			fn(...args, (err: Error | null, result?: T) => {
 				if (err) {

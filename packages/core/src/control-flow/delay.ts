@@ -1,4 +1,8 @@
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 
 /**
  * Creates a cancellable delay that resolves after the specified duration.

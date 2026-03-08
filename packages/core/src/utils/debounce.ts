@@ -1,11 +1,14 @@
-import { DebounceTaskExecutor, DebounceOptions } from "../executors/DebounceTaskExecutor";
 import { CancellableToken } from "../cancellable";
+import {
+	DebounceOptions,
+	DebounceTaskExecutor,
+} from "../executors/DebounceTaskExecutor";
 
 /**
  * A debounced function that can be cancelled or flushed.
  */
-export interface DebouncedFunction<T> {
-	(...args: any[]): Promise<T>;
+export interface DebouncedFunction<T, Args extends unknown[] = unknown[]> {
+	(...args: Args): Promise<T>;
 	cancel(): void;
 	flush(): void;
 	pending(): boolean;
@@ -45,14 +48,14 @@ export interface DebouncedFunction<T> {
  * }
  * ```
  */
-export function debounce<T>(
-	fn: (...args: any[]) => Promise<T>,
+export function debounce<T, Args extends unknown[] = unknown[]>(
+	fn: (...args: Args) => Promise<T>,
 	wait: number,
 	options?: DebounceOptions,
-): DebouncedFunction<T> {
+): DebouncedFunction<T, Args> {
 	const executor = new DebounceTaskExecutor(wait, options);
 
-	const debounced = (...args: any[]): Promise<T> => {
+	const debounced = (...args: Args): Promise<T> => {
 		return executor.exec(async (token: CancellableToken) => {
 			return fn(...args);
 		}).promise as Promise<T>;

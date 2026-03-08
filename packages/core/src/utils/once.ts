@@ -1,5 +1,9 @@
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
 
 /**
  * Creates a function that executes only once. Subsequent calls return the cached result.

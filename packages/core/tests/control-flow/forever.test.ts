@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { forever } from "../../src/control-flow/forever";
 import { CancelError } from "../../src/cancellable";
+import { forever } from "../../src/control-flow/forever";
 
 describe("forever", () => {
 	test("executes task repeatedly", async () => {

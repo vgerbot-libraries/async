@@ -3,10 +3,7 @@ import { retry } from "../../src/control-flow/retry";
 
 describe("retry", () => {
 	test("succeeds on first attempt", async () => {
-		const handle = retry(
-			async () => "success",
-			{ maxAttempts: 3 },
-		);
+		const handle = retry(async () => "success", { maxAttempts: 3 });
 		await expect(handle.promise).resolves.toBe("success");
 	});
 
@@ -38,11 +35,11 @@ describe("retry", () => {
 	});
 
 	test("uses exponential backoff", async () => {
-		let attempts = 0;
+		let _attempts = 0;
 		const delays: number[] = [];
 		const handle = retry(
 			async () => {
-				attempts++;
+				_attempts++;
 				throw new Error("fail");
 			},
 			{ maxAttempts: 3, delay: 10, backOff: "exponential" },

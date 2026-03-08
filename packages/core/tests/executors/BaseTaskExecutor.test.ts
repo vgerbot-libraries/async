@@ -72,9 +72,9 @@ describe("BaseTaskExecutor - Permanent Cancellation", () => {
 
 		// Priority pool executors throw synchronously when cancelled
 		expect(() => executor.exec(async () => "test1")).toThrow(CancelError);
-		expect(() =>
-			executor.execWithPriority(async () => "test2", 10),
-		).toThrow(CancelError);
+		expect(() => executor.execWithPriority(async () => "test2", 10)).toThrow(
+			CancelError,
+		);
 	});
 
 	test("cancellation reason is preserved", async () => {

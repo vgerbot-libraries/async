@@ -1,11 +1,14 @@
-import { ThrottleTaskExecutor, ThrottleOptions } from "../executors/ThrottleTaskExecutor";
 import { CancellableToken } from "../cancellable";
+import {
+	ThrottleOptions,
+	ThrottleTaskExecutor,
+} from "../executors/ThrottleTaskExecutor";
 
 /**
  * A throttled function that can be cancelled or flushed.
  */
-export interface ThrottledFunction<T> {
-	(...args: any[]): Promise<T>;
+export interface ThrottledFunction<T, Args extends unknown[] = unknown[]> {
+	(...args: Args): Promise<T>;
 	cancel(): void;
 	flush(): void;
 	pending(): boolean;
@@ -41,14 +44,14 @@ export interface ThrottledFunction<T> {
  * saveData.flush();
  * ```
  */
-export function throttle<T>(
-	fn: (...args: any[]) => Promise<T>,
+export function throttle<T, Args extends unknown[] = unknown[]>(
+	fn: (...args: Args) => Promise<T>,
 	wait: number,
 	options?: ThrottleOptions,
-): ThrottledFunction<T> {
+): ThrottledFunction<T, Args> {
 	const executor = new ThrottleTaskExecutor(wait, options);
 
-	const throttled = (...args: any[]): Promise<T> => {
+	const throttled = (...args: Args): Promise<T> => {
 		return executor.exec(async (token: CancellableToken) => {
 			return fn(...args);
 		}).promise as Promise<T>;
@@ -58,5 +61,5 @@ export function throttle<T>(
 	throttled.flush = () => executor.flush();
 	throttled.pending = () => executor.pending;
 
-	return throttled as ThrottledFunction<T>;
+	return throttled as ThrottledFunction<T, Args>;
 }

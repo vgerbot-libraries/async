@@ -3,7 +3,9 @@ import { promisify } from "../../src/utils/promisify";
 
 describe("promisify", () => {
 	test("converts callback function to promise", async () => {
-		function callbackFn(callback: (err: Error | null, result?: string) => void) {
+		function callbackFn(
+			callback: (err: Error | null, result?: string) => void,
+		) {
 			setTimeout(() => callback(null, "success"), 10);
 		}
 
@@ -12,7 +14,9 @@ describe("promisify", () => {
 	});
 
 	test("handles errors", async () => {
-		function callbackFn(callback: (err: Error | null, result?: string) => void) {
+		function callbackFn(
+			callback: (err: Error | null, result?: string) => void,
+		) {
 			setTimeout(() => callback(new Error("test error")), 10);
 		}
 
@@ -46,7 +50,9 @@ describe("promisify", () => {
 	});
 
 	test("handles synchronous callbacks", async () => {
-		function callbackFn(callback: (err: Error | null, result?: string) => void) {
+		function callbackFn(
+			callback: (err: Error | null, result?: string) => void,
+		) {
 			callback(null, "immediate");
 		}
 
@@ -55,7 +61,9 @@ describe("promisify", () => {
 	});
 
 	test("preserves result type", async () => {
-		function callbackFn(callback: (err: Error | null, result?: { value: number }) => void) {
+		function callbackFn(
+			callback: (err: Error | null, result?: { value: number }) => void,
+		) {
 			callback(null, { value: 42 });
 		}
 

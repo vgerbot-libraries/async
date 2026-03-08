@@ -64,20 +64,12 @@ class PriorityQueue<T extends { priority: number }> {
 			const left = this.heap[leftChild];
 			const right = this.heap[rightChild];
 
-			if (
-				left &&
-				current &&
-				left.priority > current.priority
-			) {
+			if (left && current && left.priority > current.priority) {
 				largest = leftChild;
 			}
 
 			const largestItem = this.heap[largest];
-			if (
-				right &&
-				largestItem &&
-				right.priority > largestItem.priority
-			) {
+			if (right && largestItem && right.priority > largestItem.priority) {
 				largest = rightChild;
 			}
 

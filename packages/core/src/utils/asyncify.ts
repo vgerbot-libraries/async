@@ -1,4 +1,8 @@
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 
 /**
  * Wraps a synchronous function to return a cancellable promise.
@@ -16,11 +20,11 @@ import { CancellableHandle, CancellableOptions, cancellable } from "../cancellab
  * const result = await asyncFn(5); // 10
  * ```
  */
-export function asyncify<T>(
-	fn: (...args: any[]) => T,
+export function asyncify<T, Args extends unknown[] = unknown[]>(
+	fn: (...args: Args) => T,
 	options?: CancellableOptions<T>,
-): (...args: any[]) => CancellableHandle<T> {
-	return (...args: any[]) => {
+): (...args: Args) => CancellableHandle<T> {
+	return (...args: Args) => {
 		return cancellable(async () => fn(...args), options);
 	};
 }

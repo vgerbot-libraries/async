@@ -7,7 +7,8 @@ import { QueueOptions, QueueWorker, TaskQueue } from "./queue";
  * Priority task queue interface extending the base TaskQueue.
  * Tasks with higher priority values are processed first.
  */
-export interface PriorityTaskQueue<T, R> extends Omit<TaskQueue<T, R>, "push" | "pushMany"> {
+export interface PriorityTaskQueue<T, R>
+	extends Omit<TaskQueue<T, R>, "push" | "pushMany"> {
 	/**
 	 * Enqueues a single task with optional priority.
 	 * @param task - The task to enqueue.

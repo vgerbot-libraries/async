@@ -1,5 +1,9 @@
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
 
 /**
  * Wraps an async task with a timeout. The task will be automatically cancelled

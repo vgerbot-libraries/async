@@ -22,7 +22,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("service error");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -42,7 +42,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("fail");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -67,7 +67,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("fail");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -80,7 +80,7 @@ describe("CircuitBreakerExecutor", () => {
 		// Next request should transition to HALF_OPEN
 		try {
 			await executor.exec(async () => "test");
-		} catch (e) {
+		} catch (_e) {
 			// May fail, but state should change
 		}
 
@@ -100,7 +100,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("fail");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -127,7 +127,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("fail");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -140,7 +140,7 @@ describe("CircuitBreakerExecutor", () => {
 			await executor.exec(async () => {
 				throw new Error("fail again");
 			});
-		} catch (e) {
+		} catch (_e) {
 			// Expected
 		}
 
@@ -159,7 +159,7 @@ describe("CircuitBreakerExecutor", () => {
 				await executor.exec(async () => {
 					throw new Error("fail");
 				});
-			} catch (e) {
+			} catch (_e) {
 				// Expected
 			}
 		}
@@ -180,13 +180,13 @@ describe("CircuitBreakerExecutor", () => {
 
 		expect(executor.isCancelled()).toBe(true);
 
-		await expect(
-			executor.exec(async () => "test"),
-		).rejects.toThrow("Circuit breaker executor permanently cancelled");
+		await expect(executor.exec(async () => "test")).rejects.toThrow(
+			"Circuit breaker executor permanently cancelled",
+		);
 
 		// Subsequent calls should also fail
-		await expect(
-			executor.exec(async () => "test2"),
-		).rejects.toThrow("Circuit breaker executor permanently cancelled");
+		await expect(executor.exec(async () => "test2")).rejects.toThrow(
+			"Circuit breaker executor permanently cancelled",
+		);
 	});
 });

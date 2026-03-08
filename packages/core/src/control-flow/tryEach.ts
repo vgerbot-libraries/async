@@ -1,5 +1,9 @@
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+} from "../cancellable";
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { CancellableHandle, CancellableOptions, cancellable } from "../cancellable";
 
 /**
  * Tries executing tasks in sequence until one succeeds.

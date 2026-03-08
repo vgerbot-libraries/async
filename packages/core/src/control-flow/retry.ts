@@ -1,5 +1,10 @@
+import {
+	CancellableHandle,
+	CancellableOptions,
+	cancellable,
+	RetryOptions,
+} from "../cancellable";
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { CancellableHandle, CancellableOptions, RetryOptions, cancellable } from "../cancellable";
 
 /**
  * Wraps an async task with retry logic. The task will be retried according to

@@ -130,7 +130,9 @@ export function transform<I, R>(
 				return await invoke(entry.value, entry.key);
 			});
 		} else {
-			await Promise.all(entries.map(async (entry) => await invoke(entry.value, entry.key)));
+			await Promise.all(
+				entries.map(async (entry) => await invoke(entry.value, entry.key)),
+			);
 		}
 
 		return acc;

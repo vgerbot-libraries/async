@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { delay } from "../../src/control-flow/delay";
 import { CancelError } from "../../src/cancellable";
+import { delay } from "../../src/control-flow/delay";
 
 describe("delay", () => {
 	test("delays for specified duration", async () => {
