@@ -22,7 +22,7 @@
 		"@repo/biome-config": "workspace:^",
 		"@repo/tailwind-config": "workspace:*",
 		"@repo/typescript-config": "workspace:*",
-		"@tailwindcss/vite": "^4.2.1",
+		"@tailwindcss/vite": "^4.2.2",
 		"tailwindcss": "^4.2.2",
 		"typescript": "catalog:",
 		"vinxi": "catalog:"
