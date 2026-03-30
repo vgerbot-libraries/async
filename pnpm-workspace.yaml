@@ -17,7 +17,7 @@ catalog:
   jsdom: ^28.1.0
   nyc: ^18.0.0
   prettier: ^3.8.1
-  solid-js: ^1.9.11
+  solid-js: ^1.9.12
   tsup: ^8.5.1
   turbo: ^2.8.12
   typescript: ^5.9.3
