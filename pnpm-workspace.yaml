@@ -14,7 +14,7 @@ catalog:
   '@vitest/coverage-istanbul': ^4.1.4
   '@vitest/ui': ^4.1.4
   glob: ^13.0.6
-  jsdom: ^28.1.0
+  jsdom: ^29.1.0
   nyc: ^18.0.0
   prettier: ^3.8.1
   solid-js: ^1.9.12
