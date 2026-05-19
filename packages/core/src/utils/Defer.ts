@@ -57,6 +57,29 @@ export class Defer<T> {
 	constructor() {
 		let resolveFunc!: (value: T | PromiseLike<T>) => void;
 		let rejectFunc!: (reason?: unknown) => void;
+		let isCommitted = false;
+
+		const settleFulfilled = (value: T): void => {
+			if (this.#isSettled) return;
+			this.#isSettled = true;
+			this.#resolveValue = value;
+			this.#rejectReason = undefined;
+		};
+
+		const settleRejected = (reason?: unknown): void => {
+			if (this.#isSettled) return;
+			this.#isSettled = true;
+			this.#resolveValue = undefined;
+			this.#rejectReason = reason;
+		};
+
+		const isPromiseLike = (value: unknown): value is PromiseLike<T> => {
+			if (typeof value !== "object" || value === null) {
+				return false;
+			}
+
+			return typeof (value as PromiseLike<T>).then === "function";
+		};
 
 		this.promise = new Promise<T>((resolve, reject) => {
 			resolveFunc = resolve;
@@ -64,16 +87,22 @@ export class Defer<T> {
 		});
 
 		this.resolve = (value: T | PromiseLike<T>): void => {
-			if (this.#isSettled) return;
-			this.#isSettled = true;
-			this.#resolveValue = value as T;
+			if (isCommitted) return;
+			isCommitted = true;
+
+			if (isPromiseLike(value)) {
+				Promise.resolve(value).then(settleFulfilled, settleRejected);
+			} else {
+				settleFulfilled(value);
+			}
+
 			resolveFunc(value);
 		};
 
 		this.reject = (reason?: unknown): void => {
-			if (this.#isSettled) return;
-			this.#isSettled = true;
-			this.#rejectReason = reason;
+			if (isCommitted) return;
+			isCommitted = true;
+			settleRejected(reason);
 			rejectFunc(reason);
 		};
 	}

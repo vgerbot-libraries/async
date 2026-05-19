@@ -55,6 +55,39 @@ describe("Defer", () => {
 			defer.resolve(Promise.resolve(42));
 			await expect(defer.promise).resolves.toBe(42);
 		});
+
+		test("should not settle metadata immediately for PromiseLike", async () => {
+			const defer = new Defer<number>();
+			let resolveThenable!: (value: number) => void;
+			const thenable = new Promise<number>((resolve) => {
+				resolveThenable = resolve;
+			});
+
+			defer.resolve(thenable);
+
+			expect(defer.isSettled).toBe(false);
+			expect(defer.resolveValue).toBeUndefined();
+			expect(defer.rejectReason).toBeUndefined();
+
+			resolveThenable(42);
+			await expect(defer.promise).resolves.toBe(42);
+			expect(defer.isSettled).toBe(true);
+			expect(defer.resolveValue).toBe(42);
+			expect(defer.rejectReason).toBeUndefined();
+		});
+
+		test("should store rejection metadata when PromiseLike rejects", async () => {
+			const defer = new Defer<number>();
+			const error = new Error("thenable failed");
+
+			defer.resolve(Promise.reject(error));
+
+			expect(defer.isSettled).toBe(false);
+			await expect(defer.promise).rejects.toThrow("thenable failed");
+			expect(defer.isSettled).toBe(true);
+			expect(defer.resolveValue).toBeUndefined();
+			expect(defer.rejectReason).toBe(error);
+		});
 	});
 
 	describe("reject", () => {
