@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { BaseCoverageOptions, CoverageOptions, InlineConfig } from "vitest/node";
+import type { InlineConfig } from "vitest/node";
 
 export const sharedConfig: {
     test: InlineConfig;
@@ -13,9 +13,9 @@ export const sharedConfig: {
                 ["json", { file: "coverage.json" }],
                 ["cobertura", { file: "cobertura-coverage.xml" }],
                 ["html"],
-            ] as BaseCoverageOptions["reporter"],
+            ],
             enabled: true,
-        } satisfies CoverageOptions<"istanbul">,
+        },
     } satisfies InlineConfig,
 };
 
