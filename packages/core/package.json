@@ -15,7 +15,7 @@
 		}
 	},
 	"scripts": {
-		"lint": "biome check --write",
+		"lint": "biome lint --fix",
 		"generate:component": "turbo gen react-component",
 		"check-types": "tsc --noEmit",
 		"test": "vitest run --coverage --coverage.provider=istanbul",
