@@ -3,6 +3,13 @@ import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../utils/Defer";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
+import {
+	matchesCancelRequest,
+	NormalizedTaskCancelRequest,
+	ResolvedTaskOptions,
+	resolveTaskOptions,
+	TaskOptions,
+} from "./ITaskExecutor";
 
 /**
  * Configuration options for RateLimitExecutor.
@@ -38,6 +45,7 @@ export class RateLimitExecutor extends BaseTaskExecutor {
 	private readonly windowMs: number;
 	private abortController: AbortController | undefined;
 	private readonly waitQueue: Defer<void>[] = [];
+	private currentOptions: ResolvedTaskOptions | undefined;
 
 	constructor(maxRequests: number, windowMs: number) {
 		super();
@@ -45,18 +53,23 @@ export class RateLimitExecutor extends BaseTaskExecutor {
 		this.windowMs = windowMs;
 	}
 
-	async exec<T>(task: AsyncTask<T>): Promise<T> {
+	async exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
 		this.checkCancelled("Rate limit executor permanently cancelled");
 
 		await this.acquireSlot();
 
 		this.abortController = new AbortController();
-		const token = new CancellableToken(this.abortController.signal);
+		this.currentOptions = resolveTaskOptions(options);
+		const token = new CancellableToken(
+			this.abortController.signal,
+			this.currentOptions.name ?? this.currentOptions.kind,
+		);
 
 		try {
 			const result = await task(token);
 			return result;
 		} finally {
+			this.currentOptions = undefined;
 			// Release slot for next waiting request
 			this.releaseSlot();
 		}
@@ -77,6 +90,22 @@ export class RateLimitExecutor extends BaseTaskExecutor {
 				);
 			}
 		}
+	}
+
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		if (
+			this.abortController &&
+			matchesCancelRequest(this.currentOptions, request)
+		) {
+			this.abortController.abort(
+				CancelError.fromReason("Task cancelled", request.reason),
+			);
+			this.abortController = undefined;
+			this.currentOptions = undefined;
+			return;
+		}
+
+		super.cancelFiltered(request);
 	}
 
 	private async acquireSlot(): Promise<void> {

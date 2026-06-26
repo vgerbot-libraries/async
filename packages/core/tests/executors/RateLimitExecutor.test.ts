@@ -72,4 +72,28 @@ describe("RateLimitExecutor", () => {
 		const result = await executor.exec(async () => 3);
 		expect(result).toBe(3);
 	});
+
+	test("cancels running task by kind without disabling executor", async () => {
+		const executor = new RateLimitExecutor(1, 1000);
+		let resolveStarted!: () => void;
+		const started = new Promise<void>((resolve) => {
+			resolveStarted = resolve;
+		});
+
+		const promise = executor.exec(
+			async (token) => {
+				resolveStarted();
+				await token.sleep(1000);
+				return "done";
+			},
+			{ kind: "alpha" },
+		);
+		promise.catch(noop);
+		await started;
+
+		executor.cancel({ kind: "alpha" });
+
+		await expect(promise).rejects.toThrow();
+		expect(executor.isCancelled()).toBe(false);
+	});
 });

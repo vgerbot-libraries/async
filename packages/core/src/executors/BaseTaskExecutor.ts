@@ -1,5 +1,11 @@
 import { CancelError } from "../cancellable/CancelError";
-import { ITaskExecutor } from "./ITaskExecutor";
+import {
+	ITaskExecutor,
+	NormalizedCancelParams,
+	NormalizedTaskCancelRequest,
+	normalizeCancelParams,
+	TaskCancelOptions,
+} from "./ITaskExecutor";
 
 /**
  * Base class for task executors that provides permanent cancellation semantics.
@@ -24,13 +30,28 @@ export abstract class BaseTaskExecutor implements ITaskExecutor {
 	 *
 	 * @param reason - Optional reason for cancellation
 	 */
-	cancel(reason?: unknown): void {
-		if (this.cancelled) {
+	cancel(reason?: unknown): void;
+	cancel(options: TaskCancelOptions): void;
+	cancel(reason: unknown, options: TaskCancelOptions): void;
+	cancel(
+		reasonOrOptions?: unknown | TaskCancelOptions,
+		maybeOptions?: TaskCancelOptions,
+	): void;
+	cancel(
+		reasonOrOptions?: unknown | TaskCancelOptions,
+		maybeOptions?: TaskCancelOptions,
+	): void {
+		const { filter, reason } = this.normalizeCancelArgs(
+			reasonOrOptions,
+			maybeOptions,
+		);
+
+		if (filter) {
+			this.cancelFiltered(filter);
 			return;
 		}
-		this.cancelled = true;
-		this.cancelReason = reason;
-		this.onCancel(reason);
+
+		this.cancelAll(reason);
 	}
 
 	/**
@@ -66,4 +87,32 @@ export abstract class BaseTaskExecutor implements ITaskExecutor {
 	 * @param reason - The cancellation reason
 	 */
 	protected abstract onCancel(reason?: unknown): void;
+
+	/**
+	 * Handles selective cancellation requests (e.g., by task kind).
+	 * Default behaviour upgrades to a full cancellation.
+	 */
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		this.cancelAll(request.reason);
+	}
+
+	protected cancelAll(reason?: unknown): void {
+		if (this.cancelled) {
+			return;
+		}
+		this.cancelled = true;
+		this.cancelReason = reason;
+		this.onCancel(reason);
+	}
+
+	protected getCancelReason(): unknown {
+		return this.cancelReason;
+	}
+
+	private normalizeCancelArgs(
+		reasonOrOptions?: unknown | TaskCancelOptions,
+		maybeOptions?: TaskCancelOptions,
+	): NormalizedCancelParams {
+		return normalizeCancelParams(reasonOrOptions, maybeOptions);
+	}
 }

@@ -4,11 +4,19 @@ import { CancellableHandle } from "../cancellable/CancellableHandle";
 import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../utils/Defer";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
+import {
+	matchesCancelRequest,
+	NormalizedTaskCancelRequest,
+	ResolvedTaskOptions,
+	resolveTaskOptions,
+	TaskOptions,
+} from "./ITaskExecutor";
 
 interface PriorityQueuedTask {
 	task: AsyncTask<unknown>;
 	defer: Defer<unknown>;
 	priority: number;
+	options?: ResolvedTaskOptions;
 }
 
 /**
@@ -132,11 +140,15 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 		);
 	}
 
-	exec<T>(task: AsyncTask<T>): Promise<T> {
-		return this.execWithPriority(task, 0);
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
+		return this.execWithPriority(task, 0, options);
 	}
 
-	execWithPriority<T>(task: AsyncTask<T>, priority: number): Promise<T> {
+	execWithPriority<T>(
+		task: AsyncTask<T>,
+		priority: number,
+		options?: TaskOptions,
+	): Promise<T> {
 		this.checkCancelled("Priority pool executor permanently cancelled");
 
 		const defer = new Defer<T>();
@@ -144,6 +156,7 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 			task: task as AsyncTask<unknown>,
 			defer: defer as Defer<unknown>,
 			priority,
+			options: resolveTaskOptions(options),
 		});
 
 		return defer.promise;
@@ -157,6 +170,34 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 			item.defer.reject(
 				CancelError.fromReason("Priority pool executor cancelled", reason),
 			);
+		}
+	}
+
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		const retained: PriorityQueuedTask[] = [];
+		let cancelled = 0;
+
+		for (
+			let item = this.pending.dequeue();
+			item;
+			item = this.pending.dequeue()
+		) {
+			if (matchesCancelRequest(item.options, request)) {
+				cancelled++;
+				item.defer.reject(
+					CancelError.fromReason("Task cancelled", request.reason),
+				);
+				continue;
+			}
+			retained.push(item);
+		}
+
+		for (const item of retained) {
+			this.pending.enqueue(item);
+		}
+
+		if (cancelled === 0) {
+			super.cancelFiltered(request);
 		}
 	}
 

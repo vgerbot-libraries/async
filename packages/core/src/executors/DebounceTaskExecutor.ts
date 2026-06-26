@@ -4,6 +4,13 @@ import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../utils/Defer";
 import { noop } from "../utils/noop";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
+import {
+	matchesCancelRequest,
+	NormalizedTaskCancelRequest,
+	ResolvedTaskOptions,
+	resolveTaskOptions,
+	TaskOptions,
+} from "./ITaskExecutor";
 
 export interface DebounceOptions {
 	leading?: boolean;
@@ -33,6 +40,8 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 
 	private pendingTask: AsyncTask<unknown> | undefined;
 	private pendingDefer: Defer<unknown> | undefined;
+	private pendingOptions: ResolvedTaskOptions | undefined;
+	private currentOptions: ResolvedTaskOptions | undefined;
 	private abortController: AbortController | undefined;
 
 	constructor(
@@ -49,7 +58,7 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		this.maxing = this.maxWait !== undefined;
 	}
 
-	exec<T>(task: AsyncTask<T>): Defer<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Defer<T> {
 		this.checkCancelled("Debounce executor permanently cancelled");
 
 		const time = Date.now();
@@ -60,6 +69,7 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		const defer = new Defer<T>();
 		this.pendingTask = task as AsyncTask<unknown>;
 		this.pendingDefer = defer as Defer<unknown>;
+		this.pendingOptions = resolveTaskOptions(options);
 		defer.catch(noop);
 		this.lastCallTime = time;
 
@@ -92,6 +102,37 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		}
 		this.lastInvokeTime = 0;
 		this.lastCallTime = undefined;
+		this.currentOptions = undefined;
+	}
+
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		let matched = false;
+		const cancelError = CancelError.fromReason(
+			"Task cancelled",
+			request.reason,
+		);
+
+		if (
+			this.pendingTask &&
+			matchesCancelRequest(this.pendingOptions, request)
+		) {
+			matched = true;
+			this.rejectPending(cancelError);
+		}
+
+		if (
+			this.abortController &&
+			matchesCancelRequest(this.currentOptions, request)
+		) {
+			matched = true;
+			this.abortController.abort(cancelError);
+			this.abortController = undefined;
+			this.currentOptions = undefined;
+		}
+
+		if (!matched) {
+			super.cancelFiltered(request);
+		}
 	}
 
 	flush() {
@@ -176,30 +217,45 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		this.lastInvokeTime = time;
 		const task = this.pendingTask;
 		const defer = this.pendingDefer;
+		const options = this.pendingOptions;
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;
+		this.pendingOptions = undefined;
 
 		if (!task || !defer || defer.isSettled) return;
 
 		this.abortController = new AbortController();
-		const token = new CancellableToken(this.abortController.signal);
-
-		task(token).then(
-			(result) => defer.resolve(result),
-			(error) => defer.reject(error),
+		const token = new CancellableToken(
+			this.abortController.signal,
+			options?.name ?? options?.kind,
 		);
+		this.currentOptions = options;
+
+		task(token)
+			.then(
+				(result) => defer.resolve(result),
+				(error) => defer.reject(error),
+			)
+			.finally(() => {
+				if (this.abortController?.signal === token.signal) {
+					this.abortController = undefined;
+				}
+				this.currentOptions = undefined;
+			});
 	}
 
 	private supersedePending() {
+		if (this.pendingTask) {
+			this.rejectPending(CancelError.fromReason("Task superseded", undefined));
+		}
+	}
+
+	private rejectPending(error: CancelError) {
 		if (this.pendingDefer && !this.pendingDefer.isSettled) {
-			this.pendingDefer.reject(
-				CancelError.fromReason(
-					"Task superseded",
-					undefined,
-				).withRejectionSite(),
-			);
+			this.pendingDefer.reject(error.withRejectionSite());
 		}
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;
+		this.pendingOptions = undefined;
 	}
 }

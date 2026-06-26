@@ -1,6 +1,14 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
+import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
+import {
+	matchesCancelRequest,
+	NormalizedTaskCancelRequest,
+	ResolvedTaskOptions,
+	resolveTaskOptions,
+	TaskOptions,
+} from "./ITaskExecutor";
 
 /**
  * Circuit breaker states.
@@ -56,6 +64,7 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 	private successCount = 0;
 	private nextAttempt = 0;
 	private currentAbortController: AbortController | undefined;
+	private currentOptions: ResolvedTaskOptions | undefined;
 
 	private readonly failureThreshold: number;
 	private readonly resetTimeout: number;
@@ -68,7 +77,7 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 		this.halfOpenRequests = options.halfOpenRequests ?? 1;
 	}
 
-	async exec<T>(task: AsyncTask<T>): Promise<T> {
+	async exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
 		// Check permanent cancellation state first
 		this.checkCancelled("Circuit breaker executor permanently cancelled");
 
@@ -88,7 +97,11 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 		// Create a new AbortController for this specific task execution
 		const abortController = new AbortController();
 		this.currentAbortController = abortController;
-		const token = new CancellableToken(abortController.signal);
+		this.currentOptions = resolveTaskOptions(options);
+		const token = new CancellableToken(
+			abortController.signal,
+			this.currentOptions.name ?? this.currentOptions.kind,
+		);
 
 		try {
 			const result = await task(token);
@@ -101,6 +114,7 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 			// Clear reference if this is still the current controller
 			if (this.currentAbortController === abortController) {
 				this.currentAbortController = undefined;
+				this.currentOptions = undefined;
 			}
 		}
 	}
@@ -111,6 +125,22 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 	 */
 	protected onCancel(reason?: unknown): void {
 		this.currentAbortController?.abort(reason);
+	}
+
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		if (
+			this.currentAbortController &&
+			matchesCancelRequest(this.currentOptions, request)
+		) {
+			this.currentAbortController.abort(
+				CancelError.fromReason("Task cancelled", request.reason),
+			);
+			this.currentAbortController = undefined;
+			this.currentOptions = undefined;
+			return;
+		}
+
+		super.cancelFiltered(request);
 	}
 
 	/**

@@ -5,10 +5,18 @@ import { cancellable } from "../cancellable/cancellable";
 import { Defer } from "../utils/Defer";
 import { Queue } from "../utils/Queue";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
+import {
+	matchesCancelRequest,
+	NormalizedTaskCancelRequest,
+	ResolvedTaskOptions,
+	resolveTaskOptions,
+	TaskOptions,
+} from "./ITaskExecutor";
 
 interface QueuedTask {
 	task: AsyncTask<unknown>;
 	defer: Defer<unknown>;
+	options?: ResolvedTaskOptions;
 }
 
 /**
@@ -16,7 +24,7 @@ interface QueuedTask {
  * It uses a pool of workers to pull tasks from a queue as soon as a worker becomes available.
  */
 export class PoolTaskExecutor extends BaseTaskExecutor {
-	private readonly queue = new Queue<QueuedTask | undefined>();
+	private readonly queue = new Queue<QueuedTask>();
 	private readonly workers: CancellableHandle<void>[];
 
 	constructor(concurrency: number) {
@@ -42,13 +50,14 @@ export class PoolTaskExecutor extends BaseTaskExecutor {
 		);
 	}
 
-	exec<T>(task: AsyncTask<T>): Promise<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
 		this.checkCancelled("Pool executor permanently cancelled");
 
 		const defer = new Defer<T>();
 		this.queue.enqueue({
 			task: task as AsyncTask<unknown>,
 			defer: defer as Defer<unknown>,
+			options: resolveTaskOptions(options),
 		});
 		return defer.promise;
 	}
@@ -65,6 +74,34 @@ export class PoolTaskExecutor extends BaseTaskExecutor {
 			item.defer.reject(
 				CancelError.fromReason("Pool executor cancelled", reason),
 			);
+		}
+	}
+
+	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
+		const notMatched: QueuedTask[] = [];
+		let cancelled = 0;
+
+		for (
+			let task = this.queue.dequeueNow();
+			task;
+			task = this.queue.dequeueNow()
+		) {
+			if (matchesCancelRequest(task.options, request)) {
+				cancelled++;
+				task.defer.reject(
+					CancelError.fromReason("Task cancelled", request.reason),
+				);
+				continue;
+			}
+			notMatched.push(task);
+		}
+
+		for (const task of notMatched) {
+			this.queue.enqueue(task);
+		}
+
+		if (cancelled === 0) {
+			super.cancelFiltered(request);
 		}
 	}
 }

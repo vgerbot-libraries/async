@@ -126,4 +126,38 @@ describe("PoolTaskExecutor", () => {
 
 		expect(tokenSpy).toHaveBeenCalled();
 	});
+
+	test("should cancel queued tasks by kind without disabling executor", async () => {
+		const executor = new PoolTaskExecutor(1);
+
+		const first = executor.exec(
+			async () => {
+				await new Promise((resolve) => setTimeout(resolve, 20));
+				return "first";
+			},
+			{ kind: "alpha", name: "First task" },
+		);
+
+		const second = executor.exec(async () => "second", {
+			kind: "beta",
+		});
+		void second.catch(() => undefined);
+
+		executor.cancel({ kind: "beta" });
+
+		await expect(first).resolves.toBe("first");
+		await expect(second).rejects.toBeInstanceOf(CancelError);
+		expect(executor.isCancelled()).toBe(false);
+	});
+
+	test("should fall back to full cancellation when no task matches kind", () => {
+		const executor = new PoolTaskExecutor(1);
+
+		executor.cancel({ kind: "missing" });
+
+		expect(executor.isCancelled()).toBe(true);
+		expect(() =>
+			executor.exec(async () => "will not run", { kind: "alpha" }),
+		).toThrow(CancelError);
+	});
 });

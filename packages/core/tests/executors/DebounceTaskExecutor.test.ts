@@ -180,4 +180,33 @@ describe("DebounceTaskExecutor", () => {
 
 		await expect(promise.promise).rejects.toThrow("Task failed");
 	});
+
+	test("should propagate task name to token", async () => {
+		const executor = new DebounceTaskExecutor(100);
+
+		const promise = executor.exec(async (token) => token.name, {
+			name: "Load data",
+		});
+
+		vi.advanceTimersByTime(100);
+		await vi.runAllTimersAsync();
+
+		await expect(promise.promise).resolves.toBe("Load data");
+	});
+
+	test("should cancel pending task by kind without disabling executor", async () => {
+		const executor = new DebounceTaskExecutor(100);
+
+		const pending = executor.exec(async () => 1, { kind: "alpha" });
+
+		executor.cancel({ kind: "alpha" });
+
+		await expect(pending.promise).rejects.toBeInstanceOf(CancelError);
+		expect(executor.isCancelled()).toBe(false);
+
+		const next = executor.exec(async () => 2);
+		vi.advanceTimersByTime(100);
+		await vi.runAllTimersAsync();
+		await expect(next.promise).resolves.toBe(2);
+	});
 });
