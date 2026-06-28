@@ -2,18 +2,38 @@
 	"name": "@vgerbot/async",
 	"version": "0.0.0",
 	"private": false,
-	"type": "module",
-	"exports": {
-		".": "./src/index.ts"
+	"description": "A TypeScript-first async utility library focused on cancellable async workflows, concurrency-limited collections, control-flow primitives, and task executors.",
+	"keywords": [
+		"async",
+		"promise",
+		"cancellation",
+		"concurrency",
+		"queue",
+		"typescript"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/vgerbot-libraries/async.git",
+		"directory": "packages/core"
 	},
-	"publishConfig": {
-		"exports": {
-			".": {
-				"types": "./dist/index.d.ts",
-				"import": "./dist/index.js"
-			}
+	"bugs": {
+		"url": "https://github.com/vgerbot-libraries/async/issues"
+	},
+	"homepage": "https://github.com/vgerbot-libraries/async#readme",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
 		}
 	},
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"lint": "biome lint --fix",
 		"generate:component": "turbo gen react-component",
