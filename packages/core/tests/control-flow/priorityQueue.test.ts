@@ -155,4 +155,44 @@ describe("priorityQueue", () => {
 		expect(q.running).toBe(0);
 		expect(q.idle).toBe(true);
 	});
+
+	test("onError resolves with failed task", async () => {
+		const q = priorityQueue(async (task: number) => {
+			if (task === 2) {
+				throw new Error("priority boom");
+			}
+			return task;
+		});
+
+		const onErrorPromise = q.onError();
+		const ok = q.push(1);
+		const failed = q.push(2);
+
+		await expect(ok).resolves.toBe(1);
+		await expect(failed).rejects.toThrow("priority boom");
+		await expect(onErrorPromise).resolves.toMatchObject({ task: 2 });
+	});
+
+	test("onEmpty resolves while workers may still run", async () => {
+		const q = priorityQueue(
+			async (task: number, token) => {
+				await token.sleep(task);
+				return task;
+			},
+			{ concurrency: 2 },
+		);
+
+		const execution = Promise.all([
+			q.push(10, 1),
+			q.push(10, 2),
+			q.push(50, 3),
+		]);
+
+		await q.onEmpty();
+		expect(q.length).toBe(0);
+		expect(q.running).toBeGreaterThan(0);
+
+		await q.onIdle();
+		await execution;
+	});
 });

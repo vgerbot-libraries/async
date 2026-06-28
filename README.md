@@ -175,6 +175,55 @@ const q = queue<number, number>(async (job) => job * 2, { concurrency: 2 });
 q.push(1);
 q.push(2);
 q.push(3);
+
+await q.onSaturated(); // running reaches concurrency
+await q.onEmpty(); // pending queue becomes empty
+await q.onIdle(); // pending empty + no running tasks
+
+const nextError = await q.onError();
+console.error(nextError.task, nextError.error);
+
+await q.onSizeLessThan(2); // resolves when pending size < 2
+```
+
+### Auto
+
+```ts
+import { auto } from "@vgerbot/async";
+
+const handle = auto<{
+  config: { baseUrl: string };
+  user: { id: number; url: string };
+  posts: string[];
+}>(
+  {
+    config: [[], async () => ({ baseUrl: "/api" })],
+    user: [["config"], async (results) => {
+      return { id: 1, url: `${results.config.baseUrl}/users/1` };
+    }],
+    posts: [["user"], async (results) => [`post-of-${results.user.id}`]],
+  },
+  { errorMode: "reject" },
+);
+
+const result = await handle.promise;
+```
+
+```ts
+// Optional resolve mode returns partial results and error.
+const resolved = await auto<{ a: number; b: number; c: number }>(
+  {
+    a: [[], async () => 1],
+    b: [["a"], async (results) => results.a + 1],
+    c: [["a"], async () => {
+      throw new Error("failed");
+    }],
+  },
+  { errorMode: "resolve" },
+).promise;
+
+console.log(resolved.results); // partial results
+console.log(resolved.error); // AutoExecutionError | undefined
 ```
 
 ### Cancellation

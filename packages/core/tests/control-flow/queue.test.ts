@@ -105,4 +105,97 @@ describe("queue", () => {
 		q.pause();
 		expect(q.paused).toBe(true);
 	});
+
+	test("onError resolves with task context", async () => {
+		const q = queue<number, number>(async (task) => {
+			if (task === 2) {
+				throw new Error("boom");
+			}
+			return task;
+		});
+
+		const onErrorPromise = q.onError();
+		const okPromise = q.push(1);
+		const failedPromise = q.push(2);
+
+		await expect(okPromise).resolves.toBe(1);
+		await expect(failedPromise).rejects.toThrow("boom");
+		await expect(onErrorPromise).resolves.toMatchObject({ task: 2 });
+	});
+
+	test("onEmpty resolves before onIdle", async () => {
+		const q = queue<number, number>(
+			async (task, token) => {
+				await token.sleep(task);
+				return task;
+			},
+			{ concurrency: 2 },
+		);
+
+		const execution = Promise.all([q.push(10), q.push(10), q.push(50)]);
+
+		const emptyPromise = q.onEmpty();
+		const idlePromise = q.onIdle();
+
+		await emptyPromise;
+		expect(q.length).toBe(0);
+		expect(q.running).toBeGreaterThan(0);
+
+		await idlePromise;
+		await execution;
+		expect(q.idle).toBe(true);
+	});
+
+	test("onSaturated resolves when running reaches concurrency", async () => {
+		let release!: () => void;
+		const blocker = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+
+		const q = queue<number, number>(
+			async (task) => {
+				await blocker;
+				return task;
+			},
+			{ concurrency: 2 },
+		);
+
+		const saturatedPromise = q.onSaturated();
+		q.push(1);
+		q.push(2);
+
+		await saturatedPromise;
+		expect(q.running).toBe(2);
+
+		release();
+		await q.onIdle();
+	});
+
+	test("onSizeLessThan waits for next threshold crossing", async () => {
+		let release!: () => void;
+		const blocker = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+
+		const q = queue<number, number>(
+			async (task) => {
+				await blocker;
+				return task;
+			},
+			{ concurrency: 1 },
+		);
+
+		q.push(1);
+		q.push(2);
+		q.push(3);
+		const waitLessThanThree = q.onSizeLessThan(3);
+
+		await waitLessThanThree;
+		expect(q.length).toBeLessThan(3);
+
+		expect(() => q.onSizeLessThan(0)).toThrow("positive finite number");
+
+		release();
+		await q.onIdle();
+	});
 });
