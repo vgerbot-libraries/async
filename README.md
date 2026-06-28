@@ -17,7 +17,15 @@ pnpm add @vgerbot/async
 
 ```ts
 import { map, parallel, queue, cancellable } from "@vgerbot/async";
+
+// Module-level subpath import
+import { queue as queueFromModule } from "@vgerbot/async/control-flow";
+
+// Leaf-level subpath import
+import { auto } from "@vgerbot/async/control-flow/auto";
 ```
+
+Internal implementation paths are intentionally not exported.
 
 ### Repository development
 

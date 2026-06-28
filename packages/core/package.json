@@ -29,6 +29,48 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./cancellable": {
+			"types": "./dist/cancellable/index.d.ts",
+			"import": "./dist/cancellable/index.js"
+		},
+		"./cancellable/*": {
+			"types": "./dist/cancellable/*.d.ts",
+			"import": "./dist/cancellable/*.js"
+		},
+		"./cancellable/internal": null,
+		"./collections": {
+			"types": "./dist/collections/index.d.ts",
+			"import": "./dist/collections/index.js"
+		},
+		"./collections/*": {
+			"types": "./dist/collections/*.d.ts",
+			"import": "./dist/collections/*.js"
+		},
+		"./collections/internalCollection": null,
+		"./control-flow": {
+			"types": "./dist/control-flow/index.d.ts",
+			"import": "./dist/control-flow/index.js"
+		},
+		"./control-flow/*": {
+			"types": "./dist/control-flow/*.d.ts",
+			"import": "./dist/control-flow/*.js"
+		},
+		"./executors": {
+			"types": "./dist/executors/index.d.ts",
+			"import": "./dist/executors/index.js"
+		},
+		"./executors/*": {
+			"types": "./dist/executors/*.d.ts",
+			"import": "./dist/executors/*.js"
+		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js"
+		},
+		"./utils/*": {
+			"types": "./dist/utils/*.d.ts",
+			"import": "./dist/utils/*.js"
 		}
 	},
 	"files": [
