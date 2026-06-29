@@ -14,7 +14,8 @@
         "changeset:version": "changeset version",
         "changeset:publish": "changeset publish",
         "prepare": "simple-git-hooks",
-        "docs:api": "turbo run docs:api"
+        "docs:api": "turbo run docs:api",
+        "docs:site": "pnpm --filter @repo/docs dev"
     },
     "simple-git-hooks": {
         "pre-commit": "npx lint-staged"
