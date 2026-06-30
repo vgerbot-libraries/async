@@ -1,40 +1,70 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: '@vgerbot/async'
+description: TypeScript-first async utilities for cancellable workflows, controlled concurrency, queues, and task execution.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Build async workflows with cancellation, concurrency limits, control-flow primitives, and task executors.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get started
+      link: /getting-started/installation/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
+    - text: API reference
+      link: /reference/control-flow/auto/
+      icon: document
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Why use `@vgerbot/async`?
+
+`@vgerbot/async` gives TypeScript applications a focused toolkit for async orchestration. It combines cancellable task handles, collection helpers, dependency-aware control flow, queues, and reusable task executors behind a consistent API.
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Cancellable by default" icon="setting">
+		Use `CancellableHandle`, `CancellableToken`, `CancelError`, timeouts, retries, and linked `AbortSignal` flows to stop async work predictably.
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Control async flow" icon="document">
+		Run dependency graphs with `auto`, process jobs with `queue`, compose steps with `waterfall`, and coordinate tasks with `parallel`, `series`, `race`, and more.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Limit concurrency" icon="open-book">
+		Apply concurrency to collections, queues, pools, rate limits, and priority pools without rewriting scheduling logic.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Small utilities" icon="pencil">
+		Memoize cancellable functions, compose async functions, debounce or throttle work, and bridge sync functions into cancellable handles.
 	</Card>
 </CardGrid>
+
+## Quick start
+
+```bash
+pnpm add @vgerbot/async
+```
+
+```ts
+import { auto, queue, memoize } from "@vgerbot/async";
+
+const getUser = memoize(async (id: number, token) => {
+  const response = await token.wrap(fetch(`/api/users/${id}`));
+  return response.json();
+});
+
+const jobs = queue(async (id: number) => {
+  const handle = getUser(id);
+  return handle.promise;
+}, { concurrency: 2 });
+
+const workflow = auto({
+  user: async () => jobs.push(1),
+  settings: [["user"], async ({ user }) => fetch(`/api/settings/${user.id}`)],
+});
+
+const result = await workflow.promise;
+```
+
+## Start reading
+
+- [Installation](/getting-started/installation/) covers package imports and public subpaths.
+- [Choosing APIs](/guides/choosing-apis/) helps pick the right primitive.
+- [`auto`](/reference/control-flow/auto/) shows the full reference page format used for future API coverage.
+- [`queue`](/reference/control-flow/queue/), [`PoolTaskExecutor`](/reference/executors/pool-task-executor/), and [`memoize`](/reference/utils/memoize/) provide representative MVP reference pages.
