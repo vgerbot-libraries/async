@@ -6,6 +6,7 @@ import { generateSidebar } from "./src/utils/generate-sidebar.mjs";
 
 // https://astro.build/config
 export default defineConfig({
+    base: "/",
     integrations: [
         starlight({
             title: "@vgerbot/async",
