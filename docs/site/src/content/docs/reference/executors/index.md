@@ -31,15 +31,14 @@ interface ITaskExecutor {
 
 | API | Description |
 | --- | --- |
-| `BaseTaskExecutor` | Abstract base class for permanent cancellation semantics. |
-| `ITaskExecutor` | Common executor interface. |
+| [`ITaskExecutor`](/reference/executors/itask-executor/) | Common executor interface. |
 | [`PoolTaskExecutor`](/reference/executors/pool-task-executor/) | Runs submitted tasks with fixed concurrency. |
-| `PriorityPoolExecutor` | Runs queued tasks by priority with pool concurrency. |
-| `SeriesTaskExecutor` | Runs submitted tasks one at a time in order. |
-| `RateLimitExecutor` | Limits how many tasks can start within a time window. |
-| `CircuitBreakerExecutor` | Stops calls temporarily when failures exceed a threshold. |
-| `DebounceTaskExecutor` | Debounces task execution. |
-| `ThrottleTaskExecutor` | Throttles task execution. |
+| [`SeriesTaskExecutor`](/reference/executors/series-task-executor/) | Runs submitted tasks one at a time in order. |
+| [`PriorityPoolExecutor`](/reference/executors/priority-pool-executor/) | Runs queued tasks by priority with pool concurrency. |
+| [`RateLimitExecutor`](/reference/executors/rate-limit-executor/) | Limits how many tasks can start within a time window. |
+| [`CircuitBreakerExecutor`](/reference/executors/circuit-breaker-executor/) | Stops calls temporarily when failures exceed a threshold. |
+| [`DebounceTaskExecutor`](/reference/executors/debounce-task-executor/) | Debounces task execution. |
+| [`ThrottleTaskExecutor`](/reference/executors/throttle-task-executor/) | Throttles task execution. |
 
 ## Task options
 
@@ -53,6 +52,7 @@ interface ITaskExecutor {
 
 ## Related APIs
 
+- [`ITaskExecutor`](/reference/executors/itask-executor/)
 - [`PoolTaskExecutor`](/reference/executors/pool-task-executor/)
 - [Concurrency Patterns](/guides/concurrency-patterns/)
 - [`queue`](/reference/control-flow/queue/)
