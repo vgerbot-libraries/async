@@ -3,7 +3,7 @@ title: CancellableToken
 description: The token passed to a cancellable task for cooperative cancellation.
 ---
 
-`CancellableToken` is passed to the async function inside `cancellable`. It provides utilities for cooperative cancellation: wrapping promises, sleeping, checking cancellation, and registering cleanup callbacks.
+`CancellableToken` is passed to the async function inside `cancellable`. It provides utilities for cooperative cancellation: wrapping promises, sleeping, running intervals, animation frames, checking cancellation status, and registering cleanup callbacks.
 
 > **Internal interface**
 > `CancellableToken` is what the task receives. The caller holds a `CancellableHandle`.
@@ -34,7 +34,7 @@ import { CancellableToken } from "@vgerbot/async/cancellable/CancellableToken";
 import { cancellable } from "@vgerbot/async";
 
 const handle = cancellable(async (token) => {
-  // Sleep that can be cancelled
+  // Cancellable sleep — rejects with CancelError if cancelled
   await token.sleep(5000);
 
   // Wrap a promise so it rejects on cancellation
@@ -56,21 +56,22 @@ class CancellableToken {
   readonly signal: AbortSignal;
   readonly name: string | undefined;
 
-  // Cancellation state
-  get isCancelled(): boolean;
-  get cancelError(): CancelError | undefined;
+  // Retry state
+  get retryAttempt: number;
 
-  // Cancellation utilities
+  // Cancellation state
+  isCancelled(): boolean;
   throwIfCancelled(): void;
-  onCancel(callback: (reason?: unknown) => void): void;
+  onCancel(callback: (error: CancelError) => void): () => void;
 
   // Promise wrapping
-  wrap<T>(promise: Promise<T>): Promise<T>;
+  wrap<T>(p: CancellableHandle<T> | Promise<T>): Promise<T>;
 
   // Time utilities
-  sleep(ms: number): Promise<void>;
-  delay(ms: number, value?: number): Promise<number>;
-  interval(ms: number, callback: () => void): () => void;
+  sleep(ms: number): CancellableHandle<void>;
+  frame(): CancellableHandle<void>;
+  delay(schedule: (done: () => void) => () => void): CancellableHandle<void>;
+  interval(fn: () => void | Promise<void>, interval: number): CancellableHandle<void>;
 }
 ```
 
@@ -78,12 +79,24 @@ class CancellableToken {
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `signal` | `AbortSignal` | The underlying `AbortSignal`. Can be passed to native APIs like `fetch`. |
-| `name` | `string \| undefined` | The name assigned to the task (from `CancellableOptions.name`). |
-| `isCancelled` | `boolean` | `true` if the token has been cancelled. |
-| `cancelError` | `CancelError \| undefined` | The `CancelError` if cancelled, otherwise `undefined`. |
+| `signal` | `AbortSignal` | The underlying `AbortSignal` that drives the token's cancellation. When the parent `CancellableHandle` is cancelled (or a linked `signal`/`token` aborts), this signal aborts. Pass it directly to native APIs that accept `AbortSignal`, e.g. `fetch(url, { signal: token.signal })`. |
+| `name` | `string \| undefined` | The name assigned to the task (from `CancellableOptions.name`). Used in cancellation messages and error labels. |
+| `retryAttempt` | `number` | The current retry attempt number (0-indexed). `0` for the initial attempt, `1` for the first retry, and so on. Useful for tracking retry progress when `retry` options are configured. |
 
 ### Methods
+
+#### `isCancelled()`
+
+Returns `true` if the token has been cancelled (i.e. the underlying `AbortSignal` has been aborted).
+
+```ts
+async (token) => {
+  if (token.isCancelled()) {
+    return fallbackValue;
+  }
+  // continue work
+}
+```
 
 #### `throwIfCancelled()`
 
@@ -100,24 +113,49 @@ async (token) => {
 
 #### `onCancel(callback)`
 
-Registers a callback that is called when the token is cancelled. Useful for cleanup.
+Registers a callback invoked when the token is cancelled. If the token is already cancelled, the callback is invoked immediately. Returns a cleanup function to remove the listener.
+
+The callback receives the resolved `CancelError`.
 
 ```ts
 async (token) => {
   const connection = await openConnection();
-  token.onCancel(() => connection.close());
+  const unsubscribe = token.onCancel((error) => {
+    console.log("Task cancelled:", error.message);
+    connection.close();
+  });
+
+  // Later, to remove the listener:
+  // unsubscribe();
+
   return doWork(connection);
 }
 ```
 
-#### `wrap(promise)`
+#### `wrap(p)`
 
-Wraps a promise so that it rejects with a `CancelError` if the token is cancelled. The wrapped promise also races against the cancellation signal.
+Wraps a `Promise` or `CancellableHandle` so that it rejects with a `CancelError` if the token is cancelled.
+
+When wrapping a `CancellableHandle`, cancellation is forwarded to the nested handle — calling `cancel()` on the parent will also cancel the wrapped handle.
 
 ```ts
 async (token) => {
+  // Wrap a plain promise
   const response = await token.wrap(fetch("/api/data"));
   return response.json();
+}
+```
+
+```ts
+async (token) => {
+  // Wrap a nested CancellableHandle — cancellation cascades
+  const handle = cancellable(async (innerToken) => {
+    await innerToken.sleep(1000);
+    return "done";
+  });
+
+  const result = await token.wrap(handle);
+  return result;
 }
 ```
 
@@ -126,7 +164,7 @@ async (token) => {
 
 #### `sleep(ms)`
 
-Returns a promise that resolves after `ms` milliseconds. If the token is cancelled, the sleep rejects with a `CancelError`.
+Creates a cancellable sleep/delay that resolves after `ms` milliseconds. Returns a `CancellableHandle<void>` — if the token is cancelled during the sleep, the handle rejects with a `CancelError`. The handle can also be cancelled independently of the parent token.
 
 ```ts
 async (token) => {
@@ -135,29 +173,67 @@ async (token) => {
 }
 ```
 
-#### `delay(ms, value?)`
+#### `frame()`
 
-Similar to `sleep`, but resolves with a numeric value (the elapsed time or a provided value).
+Creates a cancellable animation frame. Uses `requestAnimationFrame` if available, otherwise falls back to `setTimeout` (~16ms). Returns a `CancellableHandle<void>` that resolves on the next animation frame, or rejects with a `CancelError` if cancelled before the frame callback.
 
 ```ts
 async (token) => {
-  const elapsed = await token.delay(1000);
-  console.log(`Waited ${elapsed}ms`);
+  await token.frame();
+  // Next animation frame reached
 }
 ```
 
-#### `interval(ms, callback)`
+#### `delay(schedule)`
 
-Calls `callback` every `ms` milliseconds. Returns a cancel function. The interval is automatically cancelled when the token is cancelled.
+Creates a cancellable delay using a custom scheduling function. The scheduling function receives a callback to invoke when the delay completes, and must return a cleanup function to cancel the scheduled operation.
+
+The delay stops when:
+
+- The parent token is cancelled
+- The returned handle is cancelled
 
 ```ts
 async (token) => {
-  const stop = token.interval(1000, () => {
-    console.log("tick");
+  // Custom delay using setTimeout
+  await token.delay((done) => {
+    const timer = setTimeout(done, 1000);
+    return () => clearTimeout(timer);
   });
+}
+```
 
-  // Later, stop manually
-  stop();
+```ts
+async (token) => {
+  // Cancel independently
+  const handle = token.delay((done) => {
+    const timer = setTimeout(done, 5000);
+    return () => clearTimeout(timer);
+  });
+  handle.cancel();
+}
+```
+
+#### `interval(fn, interval)`
+
+Executes `fn` repeatedly, waiting `interval` ms between each execution (after the previous one completes). The function can be synchronous or asynchronous. Returns a `CancellableHandle<void>` that can be used to cancel the interval independently of the parent token.
+
+The interval stops when:
+
+- The parent token is cancelled
+- The returned handle is cancelled
+- `fn` throws an error (non-`CancelError` errors are wrapped)
+
+```ts
+async (token) => {
+  // Poll an API every 5 seconds
+  const handle = token.interval(async () => {
+    const data = await fetchData();
+    processData(data);
+  }, 5000);
+
+  // Cancel the interval independently
+  handle.cancel();
 }
 ```
 
@@ -199,6 +275,21 @@ const handle = cancellable(async (token) => {
 
   const data = await token.wrap(stream.read());
   return data;
+});
+```
+
+### Nested cancellable tasks
+
+```ts
+const handle = cancellable(async (token) => {
+  // Cancellation cascades to the nested task
+  const result = await token.wrap(
+    cancellable(async (innerToken) => {
+      await innerToken.sleep(1000);
+      return "inner done";
+    })
+  );
+  return result;
 });
 ```
 
