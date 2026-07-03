@@ -17,3 +17,47 @@ const apiPath = import.meta.env.BASE_URL + 'api/';
     color: var(--sl-color-white);
   }
 </style>
+
+<script>
+  import * as asyncLib from '@vgerbot/async';
+
+  window.async = asyncLib;
+
+  const bannerStyle = [
+    'font-size: 16px',
+    'font-weight: bold',
+    'color: #fff',
+    'background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899)',
+    'padding: 8px 16px',
+    'border-radius: 4px',
+    'display: block',
+  ].join(';');
+
+  const infoStyle = [
+    'font-size: 13px',
+    'color: #8b5cf6',
+    'font-weight: 600',
+  ].join(';');
+
+  const codeStyle = [
+    'font-size: 12px',
+    'color: #6366f1',
+    'font-family: monospace',
+  ].join(';');
+
+  console.log('%c@vgerbot/async is ready! 🚀', bannerStyle);
+  console.log(
+    '%cAll APIs are available on %cwindow.async%c — try them in the console:',
+    infoStyle,
+    codeStyle,
+    infoStyle,
+  );
+  console.log('%c  await async.cancellable(async token => "hello")', codeStyle);
+  console.log('%c  await async.delay(1000)', codeStyle);
+  console.log('%c  await async.map([1,2,3], async x => x * 2)', codeStyle);
+  console.log('%c  await async.retry({ times: 3 }, async () => fetch("/api"))', codeStyle);
+  console.log(
+    '%cDocs: https://github.com/vgerbot-libraries/async',
+    'font-size: 12px; color: #94a3b8;',
+  );
+</script>
