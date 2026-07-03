@@ -85,8 +85,9 @@ type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
 | --- | --- | --- | --- |
 | `name` | `string` | `undefined` | Name used in cancellation labels and error messages. |
 | `signal` | `AbortSignal` | `undefined` | External `AbortSignal` linked to the task. When the signal aborts, the task is cancelled. |
-| `onCancel` | `(reason?: unknown) => void` | `undefined` | Called when the task is cancelled. Useful for cleanup. |
-| `fallback` | `T \| ((error: unknown) => T \| Promise<T>)` | `undefined` | Fallback value or function used when the task rejects. |
+| `onCancel` | `(error: CancelError) => void \| Promise<void>` | `undefined` | Called when the task is cancelled. Receives the `CancelError`. Useful for cleanup. |
+| `onRetry` | `(info: { attempt, maxAttempts, error, waitMs }) => void \| Promise<void>` | `undefined` | Called before waiting between retry attempts. |
+| `fallback` | `T \| Promise<T> \| ((error: unknown, isCancelled: boolean) => Promise<T>)` | `undefined` | Fallback value or function used when the task rejects. |
 | `retry` | `RetryOptions` | `undefined` | Retry configuration for the task. |
 | `timeout` | `number` | `undefined` | Cancels the task after the specified milliseconds. |
 
@@ -95,9 +96,9 @@ type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `maxAttempts` | `number` | `3` | Maximum number of retry attempts (including the first try). |
-| `delay` | `number` | `0` | Delay in milliseconds between retry attempts. |
-| `backOff` | `"constant" \| "exponential"` | `"constant"` | Backoff strategy. `"exponential"` doubles the delay on each retry. |
-| `retryIf` | `(error: unknown) => boolean` | `() => true` | Predicate to decide whether to retry on a given error. |
+| `delay` | `number \| ((attempt: number, error: Error) => number)` | `0` | Delay in milliseconds between retry attempts, or a function that calculates the delay. |
+| `backOff` | `"linear" \| "exponential"` | `undefined` | Backoff strategy. `"linear"` increases delay linearly (`delay * attempt`). `"exponential"` doubles the delay on each retry (`delay * 2^attempt`). |
+| `retryIf` | `(error: Error) => boolean` | `() => true` | Predicate to decide whether to retry on a given error. |
 
 ### Return value
 

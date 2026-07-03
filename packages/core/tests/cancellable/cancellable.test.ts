@@ -393,6 +393,36 @@ describe("cancellable", () => {
 		});
 	});
 
+	describe("retryAttempt", () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.restoreAllMocks();
+		});
+
+		test("should be 0 on initial attempt and increment on retries", async () => {
+			const seenAttempts: number[] = [];
+			const handle = cancellable(
+				async (token) => {
+					seenAttempts.push(token.retryAttempt);
+					if (seenAttempts.length < 3) {
+						throw new Error("retry me");
+					}
+					return 42;
+				},
+				{ retry: { maxAttempts: 3, delay: 100 } },
+			);
+
+			const promise = handle.promise;
+			await vi.advanceTimersByTimeAsync(100);
+			await vi.advanceTimersByTimeAsync(100);
+			await expect(promise).resolves.toBe(42);
+			expect(seenAttempts).toEqual([0, 1, 2]);
+		});
+	});
+
 	describe("integration scenarios", () => {
 		beforeEach(() => {
 			vi.useFakeTimers();
@@ -431,7 +461,7 @@ describe("cancellable", () => {
 			expect(innerHandle.isCancelled()).toBe(true);
 		});
 
-		test("should preserve dual-stack diagnostics across nested wraps", async () => {
+		test("should preserve cause across nested wraps", async () => {
 			const outerHandle = cancellable(async (token) => {
 				const inner = cancellable(async (innerToken) => {
 					await innerToken.sleep(1000);
@@ -449,9 +479,7 @@ describe("cancellable", () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
-				const origin = cancelError.cause as CancelError;
-				expect(origin).toBeInstanceOf(CancelError);
-				expect(origin.cause).toBe(reason);
+				expect(cancelError.cause).toBe(reason);
 			}
 		});
 

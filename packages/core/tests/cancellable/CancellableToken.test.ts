@@ -54,7 +54,7 @@ describe("CancellableToken", () => {
 			);
 		});
 
-		test("should chain cause through rejection site", () => {
+		test("should chain cause to original reason", () => {
 			const reason = new Error("cancel origin");
 			abortController.abort(reason);
 			try {
@@ -64,9 +64,7 @@ describe("CancellableToken", () => {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
 				expect(cancelError.reason).toBe(reason);
-				const origin = cancelError.cause as CancelError;
-				expect(origin).toBeInstanceOf(CancelError);
-				expect(origin.cause).toBe(reason);
+				expect(cancelError.cause).toBe(reason);
 			}
 		});
 
@@ -111,7 +109,7 @@ describe("CancellableToken", () => {
 			await expect(wrapped).rejects.toThrow(CancelError);
 		});
 
-		test("should chain cause through wrapped rejection", async () => {
+		test("should chain cause to original reason", async () => {
 			const reason = new Error("cancel origin");
 			const promise = new Promise((resolve) => setTimeout(resolve, 50));
 			const wrapped = token.wrap(promise);
@@ -123,9 +121,7 @@ describe("CancellableToken", () => {
 				expect(error).toBeInstanceOf(CancelError);
 				const cancelError = error as CancelError;
 				expect(cancelError.reason).toBe(reason);
-				const origin = cancelError.cause as CancelError;
-				expect(origin).toBeInstanceOf(CancelError);
-				expect(origin.cause).toBe(reason);
+				expect(cancelError.cause).toBe(reason);
 			}
 		});
 
@@ -213,7 +209,7 @@ describe("CancellableToken", () => {
 			expect(fn).toHaveBeenCalledTimes(3);
 
 			abortController.abort();
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).resolves.toBeUndefined();
 		});
 
 		test("should handle async functions", async () => {
@@ -230,7 +226,7 @@ describe("CancellableToken", () => {
 			expect(fn).toHaveBeenCalledTimes(2);
 
 			abortController.abort();
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).resolves.toBeUndefined();
 		});
 
 		test("should stop when cancelled", async () => {
@@ -241,7 +237,7 @@ describe("CancellableToken", () => {
 			expect(fn).toHaveBeenCalledTimes(1);
 
 			abortController.abort();
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).resolves.toBeUndefined();
 
 			vi.advanceTimersByTime(100);
 			await flushMicrotasks();
@@ -463,11 +459,7 @@ describe("CancellableToken", () => {
 			expect(fn).toHaveBeenCalledTimes(1);
 
 			intervalHandle.cancel();
-
-			// Don't await the promise, just check it rejects
-			intervalHandle.promise.catch(() => {
-				// Intentionally empty - just preventing unhandled rejection
-			});
+			await expect(intervalHandle.promise).resolves.toBeUndefined();
 
 			vi.advanceTimersByTime(100);
 			await flushMicrotasks();
@@ -482,7 +474,7 @@ describe("CancellableToken", () => {
 			const intervalPromise = token.interval(fn, 100);
 
 			await flushMicrotasks();
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).rejects.toThrow("test error");
 		});
 
 		test("should handle async function throwing error", async () => {
@@ -493,7 +485,7 @@ describe("CancellableToken", () => {
 			const intervalPromise = token.interval(fn, 100);
 
 			await flushMicrotasks();
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).rejects.toThrow("async error");
 		});
 
 		test("should use cancelError when parent token cancelled", async () => {
@@ -504,7 +496,7 @@ describe("CancellableToken", () => {
 			expect(fn).toHaveBeenCalledTimes(1);
 
 			abortController.abort("parent cancelled");
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).resolves.toBeUndefined();
 		});
 
 		test("should break on cancellation check after function execution", async () => {
@@ -524,7 +516,7 @@ describe("CancellableToken", () => {
 			await flushMicrotasks();
 			expect(fn).toHaveBeenCalledTimes(2);
 
-			await expect(intervalPromise).rejects.toThrow(CancelError);
+			await expect(intervalPromise).resolves.toBeUndefined();
 		});
 	});
 });

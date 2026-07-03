@@ -57,9 +57,9 @@ try {
 class CancelError extends Error {
   readonly reason: unknown;
 
-  static fromReason(reason?: unknown, cause?: unknown): CancelError;
+  get rawReason: unknown;
 
-  withRejectionSite(): CancelError;
+  static fromReason(message: string, rawReason: unknown): CancelError;
 }
 ```
 
@@ -69,25 +69,21 @@ class CancelError extends Error {
 | --- | --- | --- |
 | `name` | `string` | Always `"CancelError"`. |
 | `message` | `string` | Human-readable message. |
-| `reason` | `unknown` | The original reason passed to `cancel()`. |
-| `cause` | `unknown` | Optional cause (from `AbortError` or other source). |
+| `reason` | `unknown` | The original reason passed to `cancel()`. Same as `rawReason`. |
+| `rawReason` | `unknown` | The raw reason as passed to `AbortController.abort()`, before any `CancelError` wrapping. |
+| `cause` | `unknown` | The underlying cause (same as `rawReason` when created via `fromReason`). |
 
 ### Static methods
 
-#### `CancelError.fromReason(reason?, cause?)`
+#### `CancelError.fromReason(message, rawReason)`
 
-Creates a `CancelError` from a reason value. If the reason is already a `CancelError`, it may be returned as-is.
+Creates a `CancelError` from a message and raw reason. If `rawReason` is already a `CancelError`, it is returned as-is.
 
 ```ts
-const error = CancelError.fromReason("User cancelled");
-console.log(error.reason); // "User cancelled"
+const error = CancelError.fromReason("Task cancelled", "User cancelled");
+console.log(error.message); // "Task cancelled"
+console.log(error.reason);  // "User cancelled"
 ```
-
-### Instance methods
-
-#### `withRejectionSite()`
-
-Returns a new `CancelError` with the current stack trace attached, useful for debugging where the rejection occurred.
 
 ## Error handling patterns
 

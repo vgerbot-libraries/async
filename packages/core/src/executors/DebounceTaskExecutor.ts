@@ -252,7 +252,7 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 
 	private rejectPending(error: CancelError) {
 		if (this.pendingDefer && !this.pendingDefer.isSettled) {
-			this.pendingDefer.reject(error.withRejectionSite());
+			this.pendingDefer.reject(error);
 		}
 		this.pendingTask = undefined;
 		this.pendingDefer = undefined;

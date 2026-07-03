@@ -38,9 +38,13 @@ export class CancellableToken {
 			return;
 		}
 
-		signal.addEventListener("abort", () => {
-			this.syncCancelError(signal.reason);
-		});
+		signal.addEventListener(
+			"abort",
+			() => {
+				this.syncCancelError(signal.reason);
+			},
+			{ once: true },
+		);
 	}
 
 	/**
@@ -61,30 +65,19 @@ export class CancellableToken {
 				this.signal.removeEventListener("abort", listener);
 			});
 		}
-		return new Promise<T>((resolve, reject) => {
-			if (this.isCancelled()) {
-				reject(this.rejectionError());
-				return;
-			}
-			const listener = () => {
-				reject(this.rejectionError());
-			};
-			this.signal.addEventListener("abort", listener);
-			p.then(
-				(value) => {
-					this.signal.removeEventListener("abort", listener);
-					if (this.isCancelled()) {
-						reject(this.rejectionError());
-					} else {
-						resolve(value);
-					}
-				},
-				(err) => {
-					this.signal.removeEventListener("abort", listener);
-					reject(err);
-				},
-			);
-		});
+		if (this.isCancelled()) {
+			return Promise.reject(this.rejectionError());
+		}
+		return Promise.race([
+			p,
+			new Promise<never>((_, reject) => {
+				this.signal.addEventListener(
+					"abort",
+					() => reject(this.rejectionError()),
+					{ once: true },
+				);
+			}),
+		]);
 	}
 
 	/**
@@ -177,11 +170,8 @@ export class CancellableToken {
 				const reason = handle.signal.reason;
 				handle.reject(
 					reason instanceof CancelError
-						? reason.withRejectionSite()
-						: CancelError.fromReason(
-								"delay cancelled",
-								reason,
-							).withRejectionSite(),
+						? reason
+						: CancelError.fromReason("delay cancelled", reason),
 				);
 			}
 		};
@@ -245,23 +235,47 @@ export class CancellableToken {
 					if (this.isCancelled() || handle.isCancelled()) {
 						break;
 					}
-					await this.sleep(interval);
+					await Promise.race([
+						this.sleep(interval),
+						new Promise<never>((_, reject) => {
+							handle.signal.addEventListener(
+								"abort",
+								() =>
+									reject(
+										handle.signal.reason instanceof CancelError
+											? handle.signal.reason
+											: CancelError.fromReason(
+													"interval cancelled",
+													handle.signal.reason,
+												),
+									),
+								{ once: true },
+							);
+						}),
+					]);
 				}
 				if (!handle.isSettled) {
-					const error =
-						this.cancelError ??
-						CancelError.fromReason("interval stopped", undefined);
-					handle.cancel(error);
-					handle.reject(error.withRejectionSite());
+					if (this.isCancelled()) {
+						handle.cancel(this.currentCancelError());
+					}
+					handle.resolve();
 				}
 			} catch (error) {
 				if (!handle.isSettled) {
-					const cancelError =
-						error instanceof CancelError
-							? error
-							: CancelError.fromReason("interval error", error);
-					handle.cancel(cancelError);
-					handle.reject(cancelError.withRejectionSite());
+					if (
+						error instanceof CancelError &&
+						(this.isCancelled() || handle.isCancelled())
+					) {
+						if (this.isCancelled()) {
+							handle.cancel(this.currentCancelError());
+						}
+						handle.resolve();
+					} else if (error instanceof CancelError) {
+						handle.cancel(error);
+						handle.reject(error);
+					} else {
+						handle.reject(error);
+					}
 				}
 			}
 		})();
@@ -338,7 +352,7 @@ export class CancellableToken {
 	}
 
 	private rejectionError() {
-		return this.currentCancelError().withRejectionSite();
+		return this.currentCancelError();
 	}
 }
 

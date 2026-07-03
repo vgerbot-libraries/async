@@ -222,7 +222,11 @@ The interval stops when:
 
 - The parent token is cancelled
 - The returned handle is cancelled
-- `fn` throws an error (non-`CancelError` errors are wrapped)
+- `fn` throws an error (non-`CancelError` errors reject with the original error)
+
+When the interval stops due to cancellation (parent token or handle), the handle **resolves** with `undefined` — it does not reject. This allows `await handle` to complete silently. You can still check `handle.isCancelled()` to determine if it was cancelled.
+
+When `fn` throws a non-`CancelError` error, the handle **rejects** with that original error.
 
 ```ts
 async (token) => {

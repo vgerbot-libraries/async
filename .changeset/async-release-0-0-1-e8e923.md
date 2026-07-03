@@ -1,0 +1,3 @@
+---
+"@vgerbot/async": patch
+---

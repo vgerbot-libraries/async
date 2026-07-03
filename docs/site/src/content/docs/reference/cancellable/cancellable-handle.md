@@ -57,7 +57,7 @@ class CancellableHandle<T> implements PromiseLike<T> {
 
   cancel(reason?: unknown): void;
   isCancelled(): boolean;
-  get cancelError(): CancelError | undefined;
+  get cancelError(): CancelError | null;
 
   then<TResult1 = T, TResult2 = never>(
     onfulfilled?: (value: T) => TResult1 | PromiseLike<TResult1>,
@@ -78,7 +78,7 @@ class CancellableHandle<T> implements PromiseLike<T> {
 | --- | --- | --- |
 | `promise` | `Promise<T>` | The underlying promise. Await this to get the result. |
 | `signal` | `AbortSignal` | The `AbortSignal` associated with this handle. Can be passed to other APIs. |
-| `cancelError` | `CancelError \| undefined` | The `CancelError` if the handle was cancelled, otherwise `undefined`. |
+| `cancelError` | `CancelError \| null` | The `CancelError` if the handle was cancelled, otherwise `null`. |
 
 ### Methods
 
