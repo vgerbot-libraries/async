@@ -97,10 +97,11 @@ class PriorityQueue<T extends { priority: number }> {
 /**
  * A task executor that processes tasks with priority support.
  * Tasks with higher priority values are executed first.
- * Extends PoolTaskExecutor with priority-based scheduling.
+ * Uses an internal max-heap priority queue for scheduling, with a pool of
+ * concurrent workers that pull the highest-priority pending task when freed.
  *
- * Note: This executor extends ITaskExecutor but adds an optional priority parameter.
- * The priority parameter is not part of the ITaskExecutor interface.
+ * Note: Adds an optional `priority` parameter via `execWithPriority()`,
+ * which is not part of the ITaskExecutor interface.
  *
  * @example
  * ```ts

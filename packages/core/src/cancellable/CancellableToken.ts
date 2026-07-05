@@ -26,6 +26,7 @@ export class CancellableToken {
 	/**
 	 * Creates a new CancellableToken instance.
 	 * @param signal - The AbortSignal to monitor for cancellation
+	 * @param name - Optional name for this token, used for debugging
 	 */
 	constructor(
 		public readonly signal: AbortSignal,

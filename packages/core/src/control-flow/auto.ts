@@ -90,8 +90,11 @@ interface ParsedTask {
  * - A tuple `[dependencies, taskFn]` where `results` is strongly typed by dependencies
  *
  * @param tasks - Task map where keys are task names.
- * @param options - Configuration options, including cancellation and concurrency.
- * @returns A cancellable handle resolving to task results by key.
+ * @param options - Configuration options, including cancellation, concurrency, and errorMode.
+ *   - `errorMode: "reject"` (default): rejects with an AutoExecutionError carrying partialResults.
+ *   - `errorMode: "resolve"`: resolves with `{ results, error }` containing partial results and the error.
+ * @returns A cancellable handle resolving to task results by key (reject mode),
+ *   or `{ results, error }` (resolve mode).
  *
  * @example
  * ```ts

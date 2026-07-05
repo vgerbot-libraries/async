@@ -7,7 +7,7 @@ import { CANCEL_REASON, RETRY_ATTEMPT } from "./internal";
 import { CancellableOptions } from "./options";
 
 /**
- * Creates a cancellable asynchronous task with optional retry logic.
+ * Creates a cancellable asynchronous task.
  * Returns a CancellableHandle that can be used to cancel the task or await its result.
  *
  * @template T - The type of the task result

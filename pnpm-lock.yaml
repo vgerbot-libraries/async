@@ -218,6 +218,9 @@ importers:
       '@astrojs/starlight':
         specifier: 0.39.3
         version: 0.39.3(astro@6.4.8(@types/node@25.9.3)(db0@0.3.4)(ioredis@5.9.3)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.62.0)(terser@5.46.0)(yaml@2.9.0))(typescript@5.9.3)
+      '@vgerbot/async':
+        specifier: workspace:*
+        version: link:../../packages/core
       astro:
         specifier: ^6.0.0
         version: 6.4.8(@types/node@25.9.3)(db0@0.3.4)(ioredis@5.9.3)(jiti@2.6.1)(lightningcss@1.32.0)(rollup@4.62.0)(terser@5.46.0)(yaml@2.9.0)

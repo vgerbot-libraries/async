@@ -68,7 +68,8 @@ export interface CancellableOptions<T = unknown> {
 	}) => void | Promise<void>;
 	/**
 	 * Timeout in milliseconds. The task will be automatically cancelled
-	 * after this duration with a "Timeout" cancel reason.
+	 * after this duration, with the cancel reason set to a string in the
+	 * form `"{label} timeout after {timeout}ms"`.
 	 */
 	timeout?: number;
 }

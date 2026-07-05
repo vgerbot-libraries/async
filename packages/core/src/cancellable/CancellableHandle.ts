@@ -32,6 +32,7 @@ export class CancellableHandle<T> extends Defer<T> {
 	/**
 	 * Creates a new CancellableHandle instance.
 	 * @param abortController - The AbortController used to manage cancellation
+	 * @param name - Optional name for this handle, used for debugging
 	 */
 	constructor(
 		private readonly abortController: AbortController,
