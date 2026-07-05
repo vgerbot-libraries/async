@@ -8,25 +8,34 @@ describe("PriorityPoolExecutor", () => {
 		const order: string[] = [];
 
 		// First task starts immediately
-		const p1 = executor.execWithPriority(async (token) => {
-			await token.sleep(50);
-			order.push("first");
-			return "first";
-		}, 1);
+		const p1 = executor.exec(
+			async (token) => {
+				await token.sleep(50);
+				order.push("first");
+				return "first";
+			},
+			{ priority: 1 },
+		);
 
 		// Wait a bit to ensure first task is running
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		// These will be queued
-		const p2 = executor.execWithPriority(async () => {
-			order.push("high");
-			return "high";
-		}, 10);
+		const p2 = executor.exec(
+			async () => {
+				order.push("high");
+				return "high";
+			},
+			{ priority: 10 },
+		);
 
-		const p3 = executor.execWithPriority(async () => {
-			order.push("medium");
-			return "medium";
-		}, 5);
+		const p3 = executor.exec(
+			async () => {
+				order.push("medium");
+				return "medium";
+			},
+			{ priority: 5 },
+		);
 
 		await Promise.all([p1, p2, p3]);
 		expect(order).toEqual(["first", "high", "medium"]);
@@ -68,9 +77,12 @@ describe("PriorityPoolExecutor", () => {
 		await new Promise((resolve) => setTimeout(resolve, 10));
 
 		// These will be queued
-		executor.execWithPriority(async () => {
-			order.push("high");
-		}, 5);
+		executor.exec(
+			async () => {
+				order.push("high");
+			},
+			{ priority: 5 },
+		);
 
 		executor.exec(async () => {
 			order.push("default");

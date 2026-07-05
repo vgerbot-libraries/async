@@ -12,6 +12,15 @@ import {
 	TaskOptions,
 } from "./ITaskExecutor";
 
+/**
+ * Task options for `PriorityPoolExecutor`.
+ * Extends `TaskOptions` with an optional `priority` field.
+ * Higher priority values are scheduled first; defaults to `0` when omitted.
+ */
+export interface PriorityTaskOptions extends TaskOptions {
+	readonly priority?: number;
+}
+
 interface PriorityQueuedTask {
 	task: AsyncTask<unknown>;
 	defer: Defer<unknown>;
@@ -100,16 +109,16 @@ class PriorityQueue<T extends { priority: number }> {
  * Uses an internal max-heap priority queue for scheduling, with a pool of
  * concurrent workers that pull the highest-priority pending task when freed.
  *
- * Note: Adds an optional `priority` parameter via `execWithPriority()`,
- * which is not part of the ITaskExecutor interface.
+ * The `exec()` method accepts `PriorityTaskOptions`, which extends `TaskOptions`
+ * with an optional `priority` field (default `0`).
  *
  * @example
  * ```ts
  * const executor = new PriorityPoolExecutor(2);
  *
- * executor.execWithPriority(async () => "low", 1);
- * executor.execWithPriority(async () => "high", 10);
- * executor.execWithPriority(async () => "medium", 5);
+ * executor.exec(async () => "low", { priority: 1 });
+ * executor.exec(async () => "high", { priority: 10 });
+ * executor.exec(async () => "medium", { priority: 5 });
  *
  * // Executes in order: high (10), medium (5), low (1)
  * ```
@@ -141,22 +150,14 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 		);
 	}
 
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
-		return this.execWithPriority(task, 0, options);
-	}
-
-	execWithPriority<T>(
-		task: AsyncTask<T>,
-		priority: number,
-		options?: TaskOptions,
-	): Promise<T> {
+	exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): Promise<T> {
 		this.checkCancelled("Priority pool executor permanently cancelled");
 
 		const defer = new Defer<T>();
 		this.pending.enqueue({
 			task: task as AsyncTask<unknown>,
 			defer: defer as Defer<unknown>,
-			priority,
+			priority: options?.priority ?? 0,
 			options: resolveTaskOptions(options),
 		});
 

@@ -42,10 +42,10 @@ executor.exec(async (token) => {
 }, { kind: "batch" });
 
 // Higher priority — processed first
-const result = await executor.execWithPriority(
-  10,
+const result = await executor.exec(
   async (token) => "high priority",
-).promise;
+  { priority: 10 },
+);
 
 // Cancel background tasks
 executor.cancel({ kind: "batch" });
@@ -64,11 +64,18 @@ executor.cancel({ kind: "batch" });
 class PriorityPoolExecutor extends BaseTaskExecutor {
   constructor(concurrency: number);
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
-  execWithPriority<T>(priority: number, task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): PromiseLike<T>;
   cancel(reason?: unknown): void;
   cancel(options: TaskCancelOptions): void;
   isCancelled(): boolean;
+}
+```
+
+`PriorityTaskOptions` extends `TaskOptions` with an optional `priority` field (default `0`):
+
+```ts
+interface PriorityTaskOptions extends TaskOptions {
+  priority?: number;
 }
 ```
 
@@ -86,22 +93,12 @@ new PriorityPoolExecutor(concurrency: number)
 
 #### `exec(task, options?)`
 
-Submits a task with default priority (0).
+Submits a task with optional priority. Higher `priority` values are processed first; defaults to `0` when omitted.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | `task` | `AsyncTask<T>` | — | Async function that receives a `CancellableToken`. |
-| `options` | `TaskOptions` | `undefined` | Task metadata (kind, name, metadata). |
-
-#### `execWithPriority(priority, task, options?)`
-
-Submits a task with a specific priority. Higher values are processed first.
-
-| Parameter | Type | Default | Description |
-| --- | --- | --- | --- |
-| `priority` | `number` | `0` | Priority value. Higher = processed first. |
-| `task` | `AsyncTask<T>` | — | Async function that receives a `CancellableToken`. |
-| `options` | `TaskOptions` | `undefined` | Task metadata (kind, name, metadata). |
+| `options` | `PriorityTaskOptions` | `undefined` | Task metadata (kind, name, metadata) plus optional `priority`. |
 
 #### `cancel(reason?)` / `cancel(options)`
 
@@ -114,9 +111,9 @@ Tasks are stored in a max-heap priority queue. When a worker slot is available, 
 ```ts
 const executor = new PriorityPoolExecutor(1);
 
-executor.execWithPriority(1, async () => "low");
-executor.execWithPriority(10, async () => "high");
-executor.execWithPriority(5, async () => "medium");
+executor.exec(async () => "low", { priority: 1 });
+executor.exec(async () => "high", { priority: 10 });
+executor.exec(async () => "medium", { priority: 5 });
 
 // Processing order: high (10), medium (5), low (1)
 ```
@@ -143,16 +140,16 @@ executor.cancel({ kind: "batch" });
 
 ## TypeScript tips
 
-`exec` and `execWithPriority` are generic over `T`.
+`exec` is generic over `T`.
 
 ```ts
-const result = await executor.execWithPriority(
-  5,
+const result = await executor.exec(
   async (token) => {
     const res = await token.wrap(fetch("/api/data"));
     return res.json() as Promise<{ id: number }>;
   },
-).promise; // { id: number }
+  { priority: 5 },
+); // { id: number }
 ```
 
 ## Related APIs
