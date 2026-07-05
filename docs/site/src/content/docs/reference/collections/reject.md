@@ -39,7 +39,7 @@ const handle = reject(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // [1, 3]
+const result = await handle; // [1, 3]
 ```
 
 Object input:
@@ -50,7 +50,7 @@ const handle = reject(
   async (value, key) => key === "b" || value < 2,
 );
 
-const result = await handle.promise; // [3]
+const result = await handle; // [3]
 ```
 
 ## When to use `reject`
@@ -120,7 +120,7 @@ const handle = reject(
   async (value, key) => value > 2,
 );
 
-const result = await handle.promise; // number[] → [1, 2]
+const result = await handle; // number[] → [1, 2]
 ```
 
 ## Related APIs

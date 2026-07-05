@@ -24,7 +24,7 @@ export class CancellableToken {
 	private cancelError: CancelError | null = null;
 
 	/**
-	 * Creates a new CancellableTaskToken instance.
+	 * Creates a new CancellableToken instance.
 	 * @param signal - The AbortSignal to monitor for cancellation
 	 */
 	constructor(
@@ -203,7 +203,7 @@ export class CancellableToken {
 	 * The interval will stop when:
 	 * - The parent token is cancelled
 	 * - The returned handle is cancelled
-	 * - The function throws an error (non-CancelError errors are wrapped)
+	 * - The function throws an error (non-CancelError errors reject with the original error)
 	 *
 	 * @param fn - The function to execute at each interval. Can return a Promise for async operations.
 	 * @param interval - The interval in milliseconds to wait between executions (after each execution completes)
@@ -314,7 +314,7 @@ export class CancellableToken {
 	 * @example
 	 * ```typescript
 	 * const unsubscribe = token.onCancel((error) => {
-	 *   console.log('Task cancelled:', error?.message);
+	 *   console.log('Task cancelled:', error.message);
 	 * });
 	 * // Later, to remove the listener:
 	 * unsubscribe();

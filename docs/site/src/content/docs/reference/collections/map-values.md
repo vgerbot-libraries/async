@@ -42,7 +42,7 @@ const handle = mapValues(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // { a: "a:2", b: "b:4" }
+const result = await handle; // { a: "a:2", b: "b:4" }
 ```
 
 ## When to use `mapValues`
@@ -104,7 +104,7 @@ const handle = mapValues(
   async (value, key, token) => value * 10,
 );
 
-const result = await handle.promise; // { a: 10, b: 20, c: 30 }
+const result = await handle; // { a: 10, b: 20, c: 30 }
 ```
 
 ## Related APIs

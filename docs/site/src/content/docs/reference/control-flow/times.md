@@ -42,7 +42,7 @@ const handle = times(
   { concurrency: 2 },
 );
 
-const results = await handle.promise; // [0, 2, 4, 6, 8]
+const results = await handle; // [0, 2, 4, 6, 8]
 ```
 
 ## When to use `times`
@@ -88,7 +88,7 @@ Returns a `CancellableHandle<T[]>` that resolves to an array of results in index
 ```ts
 const handle = times(10, myIteratee, { concurrency: 3 });
 
-const results = await handle.promise;
+const results = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -109,7 +109,7 @@ const handle = times(
   { concurrency: 3 },
 );
 
-const results = await handle.promise;
+const results = await handle;
 // ["item-0", "item-1", ..., "item-9"] in order
 ```
 
@@ -124,7 +124,7 @@ try {
   await times(5, async (i) => {
     if (i === 2) throw new Error("fail at index 2");
     return i;
-  }).promise;
+  });
 } catch (error) {
   console.log("times failed:", error);
 }
@@ -154,7 +154,7 @@ setTimeout(() => handle.cancel("User cancelled"), 500);
 ```ts
 const handle = times(5, async (i, token) => ({ id: i, name: `item-${i}` }));
 
-const results = await handle.promise; // { id: number; name: string }[]
+const results = await handle; // { id: number; name: string }[]
 ```
 
 ## Related APIs

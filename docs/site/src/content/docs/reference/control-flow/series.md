@@ -33,7 +33,7 @@ import { series } from "@vgerbot/async/control-flow/series";
 ```ts
 import { series } from "@vgerbot/async";
 
-const handle = series([
+const handle = series({},
   async (token) => {
     await token.sleep(50);
     return 10;
@@ -46,9 +46,9 @@ const handle = series([
     // result is 20
     return `Final: ${result}`;
   },
-]);
+);
 
-const value = await handle.promise; // "Final: 20"
+const value = await handle; // "Final: 20"
 ```
 
 ## When to use `series`
@@ -63,57 +63,60 @@ const value = await handle.promise; // "Final: 20"
 ```ts
 // Single task
 function series<T1>(
-  tasks: [AsyncTask<T1>],
-  options?: CancellableOptions<T1>,
+  options: CancellableOptions,
+  task1: SeriesTask<void, T1>,
 ): CancellableHandle<T1>;
 
 // Two tasks
 function series<T1, T2>(
-  tasks: [AsyncTask<T1>, SeriesTask<T1, T2>],
-  options?: CancellableOptions<T2>,
+  options: CancellableOptions,
+  task1: SeriesTask<void, T1>,
+  task2: SeriesTask<T1, T2>,
 ): CancellableHandle<T2>;
 
 // Three tasks
 function series<T1, T2, T3>(
-  tasks: [AsyncTask<T1>, SeriesTask<T1, T2>, SeriesTask<T2, T3>],
-  options?: CancellableOptions<T3>,
+  options: CancellableOptions,
+  task1: SeriesTask<void, T1>,
+  task2: SeriesTask<T1, T2>,
+  task3: SeriesTask<T2, T3>,
 ): CancellableHandle<T3>;
 
 // Four tasks
 function series<T1, T2, T3, T4>(
-  tasks: [
-    AsyncTask<T1>,
-    SeriesTask<T1, T2>,
-    SeriesTask<T2, T3>,
-    SeriesTask<T3, T4>,
-  ],
-  options?: CancellableOptions<T4>,
+  options: CancellableOptions,
+  task1: SeriesTask<void, T1>,
+  task2: SeriesTask<T1, T2>,
+  task3: SeriesTask<T2, T3>,
+  task4: SeriesTask<T3, T4>,
 ): CancellableHandle<T4>;
 
 // Five or more (untyped chain)
 function series(
-  tasks: AsyncTask<unknown>[],
-  options?: CancellableOptions<unknown>,
+  options: CancellableOptions,
+  task1: SeriesTask<void, unknown>,
+  ...args: SeriesTask<unknown, unknown>[],
 ): CancellableHandle<unknown>;
 ```
 
-The first task is an `AsyncTask<T1>` (receives only a token). Subsequent tasks receive the previous result and a token.
+The first task is a `SeriesTask<void, T1>` (receives only a token). Subsequent tasks receive the previous result and a token.
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `tasks` | `AsyncTask[]` | — | Array of async tasks to execute sequentially. |
-| `options` | `CancellableOptions<T>` | `undefined` | Cancellable configuration options. |
+| `options` | `CancellableOptions` | — | Cancellable configuration options. |
+| `task1` | `SeriesTask<void, T1>` | — | The first task to execute (receives only a token). |
+| `...args` | `SeriesTask<unknown, unknown>[]` | — | Additional tasks to execute in sequence. Each receives the previous task's result. |
 
 ### Return value
 
 Returns a `CancellableHandle<T>` that resolves to the result of the last task.
 
 ```ts
-const handle = series(tasks);
+const handle = series({}, task1, task2, task3);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -124,7 +127,7 @@ handle.signal;
 Tasks are executed one at a time. The first task receives only a `CancellableToken`. Each subsequent task receives the resolved value of the previous task and the same token. If any task rejects, the chain stops and the handle rejects with that error.
 
 ```ts
-const handle = series([
+const handle = series({},
   async (token) => {
     const res = await token.wrap(fetch("/api/step1"));
     return res.json();
@@ -139,7 +142,7 @@ const handle = series([
     console.log("Final result:", result);
     return result;
   },
-]);
+);
 ```
 
 Tasks can also be `CancellableHandle` instances or `Promise` instances, which are awaited directly.
@@ -150,11 +153,11 @@ If any task in the series rejects, the handle rejects immediately with that erro
 
 ```ts
 try {
-  await series([
+  await series({},
     async () => "step1",
     async () => { throw new Error("step2 failed"); },
     async () => "step3 (never runs)",
-  ]).promise;
+  );
 } catch (error) {
   console.log("Series failed:", error);
 }
@@ -165,15 +168,15 @@ try {
 All tasks share a single `CancellableToken`. Calling `cancel()` on the handle signals cancellation to the currently running task and prevents subsequent tasks from starting.
 
 ```ts
-const handle = series([
+const handle = series({ name: "pipeline" },
   async (token) => { await token.sleep(5000); return "slow"; },
   async (result) => `${result} done`,
-], { name: "pipeline" });
+);
 
 setTimeout(() => handle.cancel("User cancelled"), 100);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Series was cancelled");
@@ -186,13 +189,13 @@ try {
 For up to four tasks, `series` provides typed overloads so the result of each task is passed with the correct type to the next.
 
 ```ts
-const handle = series([
+const handle = series({},
   async (token) => 10,                                    // returns number
   async (n: number, token) => `Value: ${n}`,             // receives number, returns string
   async (s: string, token) => ({ result: s }),           // receives string, returns object
-]);
+);
 
-const result = await handle.promise; // { result: string }
+const result = await handle; // { result: string }
 ```
 
 For five or more tasks, the chain falls back to `unknown` types. Use explicit type annotations in this case.

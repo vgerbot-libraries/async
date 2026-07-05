@@ -33,13 +33,13 @@ import { allSettled } from "@vgerbot/async/control-flow/allSettled";
 ```ts
 import { allSettled } from "@vgerbot/async";
 
-const handle = allSettled([
+const handle = allSettled({},
   async () => "success",
   async () => { throw new Error("fail"); },
   async () => 42,
-]);
+);
 
-const outcomes = await handle.promise;
+const outcomes = await handle;
 // [
 //   { status: "fulfilled", value: "success" },
 //   { status: "rejected", reason: Error("fail") },
@@ -57,18 +57,18 @@ const outcomes = await handle.promise;
 ## API
 
 ```ts
-function allSettled<T>(
-  tasks: AsyncTask<T>[],
-  options?: CancellableOptions<PromiseSettledResult<T>[]>,
-): CancellableHandle<PromiseSettledResult<T>[]>;
+function allSettled(
+  options: CancellableOptions<unknown[]>,
+  ...tasks: AsyncTask<unknown>[]
+): CancellableHandle<PromiseSettledResult<unknown>[]>;
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `tasks` | `AsyncTask<T>[]` | — | Array of async tasks to execute. Each receives a `CancellableToken`. |
-| `options` | `CancellableOptions<...>` | `undefined` | Cancellable configuration options. |
+| `options` | `CancellableOptions<unknown[]>` | — | Cancellable configuration options. |
+| `...tasks` | `AsyncTask<T>[]` | — | Rest parameters of async tasks to execute. Each receives a `CancellableToken`. |
 
 ### Return value
 
@@ -80,9 +80,9 @@ Each outcome is either:
 - `{ status: "rejected", reason: unknown }` — task failed
 
 ```ts
-const handle = allSettled(tasks);
+const handle = allSettled({}, task1, task2, task3);
 
-const outcomes = await handle.promise;
+const outcomes = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -93,13 +93,13 @@ handle.signal;
 All tasks start concurrently and share a `CancellableToken`. The handle resolves only after every task has settled (either fulfilled or rejected). Results are in the same order as the input tasks.
 
 ```ts
-const handle = allSettled([
+const handle = allSettled({},
   async (token) => { await token.sleep(100); return "a"; },
   async (token) => { throw new Error("b failed"); },
   async (token) => { await token.sleep(50); return "c"; },
-]);
+);
 
-const outcomes = await handle.promise;
+const outcomes = await handle;
 // outcomes[0] = { status: "fulfilled", value: "a" }
 // outcomes[1] = { status: "rejected", reason: Error("b failed") }
 // outcomes[2] = { status: "fulfilled", value: "c" }
@@ -110,10 +110,10 @@ const outcomes = await handle.promise;
 `allSettled` never rejects due to task failures—it always resolves with the full set of outcomes. Individual failures are captured as `{ status: "rejected", reason }` entries.
 
 ```ts
-const outcomes = await allSettled([
+const outcomes = await allSettled({},
   async () => "ok",
   async () => { throw new Error("fail"); },
-]).promise;
+);
 
 const successes = outcomes
   .filter((o) => o.status === "fulfilled")
@@ -130,16 +130,16 @@ Calling `cancel()` on the handle cancels all participating tasks. If cancelled, 
 
 ```ts
 const handle = allSettled(
-  Array.from({ length: 10 }, (_, i) =>
+  { name: "batchFetch" },
+  ...Array.from({ length: 10 }, (_, i) =>
     async (token) => { await token.sleep(1000); return i; }
   ),
-  { name: "batchFetch" },
 );
 
 setTimeout(() => handle.cancel("User navigated away"), 100);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Batch was cancelled");
@@ -152,10 +152,10 @@ try {
 `allSettled` uses the standard `PromiseSettledResult<T>` type from the TypeScript standard library.
 
 ```ts
-const outcomes = await allSettled([
+const outcomes = await allSettled({},
   async () => 1,
   async () => "hello",
-]).promise;
+);
 // Type: PromiseSettledResult<number | string>[]
 ```
 

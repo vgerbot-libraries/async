@@ -68,7 +68,7 @@ Returns a `CancellableHandle<void>` that resolves after the delay.
 ```ts
 const handle = delay(5000);
 
-await handle.promise;
+await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -85,7 +85,7 @@ const handle = delay(10_000);
 setTimeout(() => handle.cancel(), 1000);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   console.log("Delay was cancelled");
 }

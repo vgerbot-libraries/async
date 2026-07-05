@@ -42,7 +42,7 @@ const handle = every(
   { concurrency: 2 },
 );
 
-const allEven = await handle.promise; // true
+const allEven = await handle; // true
 ```
 
 ## When to use `every`
@@ -108,7 +108,7 @@ All evaluations share a single `CancellableToken`. Calling `cancel()` signals ca
 The return type is always `boolean`. Empty collections return `true`.
 
 ```ts
-const allValid = await every(items, async (item) => item.isValid).promise;
+const allValid = await every(items, async (item) => item.isValid);
 if (allValid) {
   // proceed
 }

@@ -42,7 +42,7 @@ const handle = detect(
   { concurrency: 2 },
 );
 
-const found = await handle.promise; // 3
+const found = await handle; // 3
 ```
 
 Object input:
@@ -53,7 +53,7 @@ const handle = detect(
   async (value, key) => key === "b" && value > 3,
 );
 
-const found = await handle.promise; // 4
+const found = await handle; // 4
 ```
 
 ## When to use `detect`
@@ -121,7 +121,7 @@ All evaluations share a single `CancellableToken`. Calling `cancel()` signals ca
 The return type is `I | undefined` — always check for `undefined` before using the result.
 
 ```ts
-const found = await detect(items, async (item) => item.isValid).promise;
+const found = await detect(items, async (item) => item.isValid);
 if (found !== undefined) {
   console.log("Found:", found);
 }

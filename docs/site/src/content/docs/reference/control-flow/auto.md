@@ -75,7 +75,7 @@ const handle = auto<{
   { concurrency: 2 },
 );
 
-const result = await handle.promise;
+const result = await handle;
 
 console.log(result.summary);
 ```
@@ -147,24 +147,24 @@ The `results` object only contains completed dependencies. When dependencies are
 ```ts
 const handle = auto(tasks);
 
-await handle.promise;
+await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
 ```
 
-In default reject mode, `handle.promise` resolves to the complete result map.
+In default reject mode, `handle` resolves to the complete result map.
 
 ```ts
-const results = await auto(tasks).promise;
+const results = await auto(tasks);
 ```
 
-In resolve mode, `handle.promise` always resolves to an object containing partial results and an optional `AutoExecutionError`.
+In resolve mode, `handle` always resolves to an object containing partial results and an optional `AutoExecutionError`.
 
 ```ts
 const { results, error } = await auto(tasks, {
   errorMode: "resolve",
-}).promise;
+});
 ```
 
 ## Dependency execution model
@@ -189,7 +189,7 @@ const handle = auto(
   { concurrency: 2 },
 );
 
-console.log(await handle.promise);
+console.log(await handle);
 // { a: "a", b: "b", c: "ab" }
 ```
 
@@ -197,7 +197,7 @@ console.log(await handle.promise);
 
 ### Reject mode
 
-Reject mode is the default. If a task fails, `handle.promise` rejects with `AutoExecutionError`.
+Reject mode is the default. If a task fails, `handle` rejects with `AutoExecutionError`.
 
 ```ts
 import { AutoExecutionError, auto } from "@vgerbot/async";
@@ -216,7 +216,7 @@ const handle = auto<{
 });
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof AutoExecutionError) {
     console.log(error.taskName);
@@ -245,7 +245,7 @@ const { results, error } = await auto<{
     ],
   },
   { errorMode: "resolve" },
-).promise;
+);
 
 if (error) {
   console.log(results.profile);
@@ -273,7 +273,7 @@ setTimeout(() => {
   handle.cancel("User navigated away");
 }, 100);
 
-await handle.promise;
+await handle;
 ```
 
 > **Cancellation rejects with `CancelError`**
@@ -286,7 +286,7 @@ await handle.promise;
 ```ts
 await auto({
   user: [["missingConfig"], async () => ({ id: 1 })],
-}).promise;
+});
 
 // Error: auto task "user" depends on unknown task "missingConfig"
 ```
@@ -297,7 +297,7 @@ If tasks cannot be resolved because of a cycle, the promise rejects with a cycle
 await auto({
   a: [["b"], async () => 1],
   b: [["a"], async () => 2],
-}).promise;
+});
 
 // Error: auto cannot resolve dependencies (possible cycle): a[b]; b[a]
 ```
@@ -342,8 +342,8 @@ const handle = auto<WorkflowResults>({
 
 ## Related APIs
 
-- [`parallel`](/reference/control-flow/) runs independent tasks concurrently.
-- [`series`](/reference/control-flow/) runs tasks one after another.
-- [`waterfall`](/reference/control-flow/) passes each task result into the next task.
+- [`parallel`](/reference/control-flow/parallel/) runs independent tasks concurrently.
+- [`series`](/reference/control-flow/series/) runs tasks one after another.
+- [`waterfall`](/reference/control-flow/waterfall/) passes each task result into the next task.
 - [`queue`](/reference/control-flow/queue/) manages a long-lived worker queue.
 - [`cancellable`](/reference/cancellable/) creates a cancellable handle directly.

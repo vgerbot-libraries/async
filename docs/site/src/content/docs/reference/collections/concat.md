@@ -42,7 +42,7 @@ const handle = concat(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // [1, 2, 2, 4, 3, 6]
+const result = await handle; // [1, 2, 2, 4, 3, 6]
 ```
 
 Object input:
@@ -53,7 +53,7 @@ const handle = concat(
   async (value, key) => value.split(""),
 );
 
-const result = await handle.promise; // ['h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd']
+const result = await handle; // ['h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd']
 ```
 
 ## When to use `concat`
@@ -128,7 +128,7 @@ const handle = concat(
   },
 );
 
-const allPosts = await handle.promise; // Post[]
+const allPosts = await handle; // Post[]
 ```
 
 ## Related APIs

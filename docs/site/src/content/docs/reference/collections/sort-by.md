@@ -47,7 +47,7 @@ const handle = sortBy(
   },
 );
 
-const result = await handle.promise;
+const result = await handle;
 // [{ name: 'Bob', age: 25 }, { name: 'Alice', age: 30 }, { name: 'Charlie', age: 35 }]
 ```
 
@@ -118,7 +118,7 @@ const handle = sortBy(
   async (value) => value,
 );
 
-const result = await handle.promise; // [1, 2, 3]
+const result = await handle; // [1, 2, 3]
 ```
 
 ## Related APIs

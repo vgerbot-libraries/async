@@ -43,7 +43,7 @@ const handle = whilst(
   },
 );
 
-await handle.promise;
+await handle;
 console.log(count); // 5
 ```
 
@@ -57,28 +57,31 @@ console.log(count); // 5
 ## API
 
 ```ts
+type WhilstTest = (token: CancellableToken) => boolean | Promise<boolean>;
+type WhilstIteratee = (token: CancellableToken) => void | Promise<void>;
+
 function whilst(
-  test: () => Promise<boolean>,
-  iteratee: (token: CancellableToken) => Promise<void>,
-  options?: CancellableOptions<void>,
+  test: WhilstTest,
+  iteratee: WhilstIteratee,
+  options?: CancellableOptions,
 ): CancellableHandle<void>;
 
 function until(
-  test: () => Promise<boolean>,
-  iteratee: (token: CancellableToken) => Promise<void>,
-  options?: CancellableOptions<void>,
+  test: WhilstTest,
+  iteratee: WhilstIteratee,
+  options?: CancellableOptions,
 ): CancellableHandle<void>;
 
 function doWhilst(
-  iteratee: (token: CancellableToken) => Promise<void>,
-  test: () => Promise<boolean>,
-  options?: CancellableOptions<void>,
+  iteratee: WhilstIteratee,
+  test: WhilstTest,
+  options?: CancellableOptions,
 ): CancellableHandle<void>;
 
 function doUntil(
-  iteratee: (token: CancellableToken) => Promise<void>,
-  test: () => Promise<boolean>,
-  options?: CancellableOptions<void>,
+  iteratee: WhilstIteratee,
+  test: WhilstTest,
+  options?: CancellableOptions,
 ): CancellableHandle<void>;
 ```
 
@@ -86,9 +89,9 @@ function doUntil(
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `test` | `() => Promise<boolean>` | — | Async function that determines whether to continue looping. |
-| `iteratee` | `(token) => Promise<void>` | — | Async function executed on each iteration. Receives a `CancellableToken`. |
-| `options` | `CancellableOptions<void>` | `undefined` | Cancellable configuration options. |
+| `test` | `(token) => boolean \| Promise<boolean>` | — | Condition evaluated before (or after) each iteration. Receives a `CancellableToken`. Can return a boolean or a Promise that resolves to a boolean. |
+| `iteratee` | `(token) => void \| Promise<void>` | — | Async function executed on each iteration. Receives a `CancellableToken`. |
+| `options` | `CancellableOptions` | `undefined` | Cancellable configuration options. |
 
 ### Return value
 
@@ -97,7 +100,7 @@ Returns a `CancellableHandle<void>` that resolves when the loop completes.
 ```ts
 const handle = whilst(test, iteratee);
 
-await handle.promise;
+await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -144,7 +147,7 @@ const handle = whilst(
   { name: "jobPolling" },
 );
 
-await handle.promise;
+await handle;
 console.log("Job completed");
 ```
 
@@ -157,7 +160,7 @@ try {
   await whilst(
     async () => true,
     async () => { throw new Error("iteratee failed"); },
-  ).promise;
+  );
 } catch (error) {
   console.log("Loop failed:", error);
 }
@@ -177,7 +180,7 @@ const handle = whilst(
 setTimeout(() => handle.cancel("User navigated away"), 5000);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Loop was cancelled");
@@ -200,7 +203,7 @@ const results = await transform(
     acc.push(i * 2);
   },
   [] as number[],
-).promise;
+);
 ```
 
 ## Related APIs

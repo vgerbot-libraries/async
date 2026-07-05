@@ -42,7 +42,7 @@ const handle = each(
   { concurrency: 2 },
 );
 
-await handle.promise;
+await handle;
 ```
 
 Object input:
@@ -55,7 +55,7 @@ const handle = each(
   },
 );
 
-await handle.promise;
+await handle;
 ```
 
 ## When to use `each`

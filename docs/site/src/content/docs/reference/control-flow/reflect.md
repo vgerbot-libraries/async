@@ -37,7 +37,7 @@ const handle = reflect(async () => {
   throw new Error("failed");
 });
 
-const result = await handle.promise;
+const result = await handle;
 // { status: "rejected", reason: Error("failed") }
 ```
 
@@ -75,7 +75,7 @@ Returns a `CancellableHandle<SettledResult<T>>` that always resolves to a `Settl
 ```ts
 const handle = reflect(myTask);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -92,7 +92,7 @@ const handle = reflect(async (token) => {
   return res.json();
 });
 
-const outcome = await handle.promise;
+const outcome = await handle;
 
 if (outcome.status === "fulfilled") {
   console.log("Data:", outcome.value);
@@ -108,13 +108,13 @@ if (outcome.status === "fulfilled") {
 ```ts
 import { parallel, reflect } from "@vgerbot/async";
 
-const handle = parallel([
+const handle = parallel({},
   reflect(async () => "success"),
   reflect(async () => { throw new Error("fail"); }),
   reflect(async () => 42),
-]);
+);
 
-const results = await handle.promise;
+const results = await handle;
 // [
 //   { status: "fulfilled", value: "success" },
 //   { status: "rejected", reason: Error("fail") },
@@ -139,7 +139,7 @@ const handle = reflect(async (token) => {
 handle.cancel("User cancelled");
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Reflected task was cancelled");
@@ -168,7 +168,7 @@ setTimeout(() => handle.cancel("No longer needed"), 100);
 Use type guards to narrow the `SettledResult` union:
 
 ```ts
-const outcome = await reflect(async () => 42).promise;
+const outcome = await reflect(async () => 42);
 
 if (outcome.status === "fulfilled") {
   const value: number = outcome.value; // narrowed to number

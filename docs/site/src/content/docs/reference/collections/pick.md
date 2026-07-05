@@ -43,7 +43,7 @@ const handle = pick(
   },
 );
 
-const result = await handle.promise; // { b: 2, d: 4 }
+const result = await handle; // { b: 2, d: 4 }
 ```
 
 ## When to use `pick`
@@ -105,7 +105,7 @@ const handle = pick(
   async (value, key) => key !== "a",
 );
 
-const result = await handle.promise; // { b: 2, c: 3 }
+const result = await handle; // { b: 2, c: 3 }
 ```
 
 ## Related APIs

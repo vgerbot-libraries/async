@@ -38,7 +38,7 @@ const handle = partition(
   async (item) => item % 2 === 0,
 );
 
-const [evens, odds] = await handle.promise; // [[2, 4], [1, 3, 5]]
+const [evens, odds] = await handle; // [[2, 4], [1, 3, 5]]
 ```
 
 ## When to use `partition`
@@ -106,7 +106,7 @@ The return type is a tuple `[I[], I[]]`. Use destructuring for clean access:
 const [passed, failed] = await partition(
   items,
   async (item) => item.isValid,
-).promise;
+);
 ```
 
 ## Related APIs

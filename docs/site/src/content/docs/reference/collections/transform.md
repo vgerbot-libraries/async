@@ -44,7 +44,7 @@ const handle = transform(
   [] as number[],
 );
 
-const result = await handle.promise; // [4, 8]
+const result = await handle; // [4, 8]
 ```
 
 Object input with default accumulator:
@@ -58,7 +58,7 @@ const handle = transform(
   {} as Record<string, number>,
 );
 
-const result = await handle.promise; // { a: 10, b: 20, c: 30 }
+const result = await handle; // { a: 10, b: 20, c: 30 }
 ```
 
 ## When to use `transform`
@@ -137,7 +137,7 @@ const handle = transform(
   new Map<string, number>(),
 );
 
-const result = await handle.promise; // Map<string, number>
+const result = await handle; // Map<string, number>
 ```
 
 ## Related APIs

@@ -95,7 +95,7 @@ type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `maxAttempts` | `number` | `3` | Maximum number of retry attempts (including the first try). |
+| `maxAttempts` | `number` | `1` | Maximum number of attempts (including the first try). No retry by default. |
 | `delay` | `number \| ((attempt: number, error: Error) => number)` | `0` | Delay in milliseconds between retry attempts, or a function that calculates the delay. |
 | `backOff` | `"linear" \| "exponential"` | `undefined` | Backoff strategy. `"linear"` increases delay linearly (`delay * attempt`). `"exponential"` doubles the delay on each retry (`delay * 2^attempt`). |
 | `retryIf` | `(error: Error) => boolean` | `() => true` | Predicate to decide whether to retry on a given error. |
@@ -107,7 +107,7 @@ Returns a `CancellableHandle<T>` — see the [CancellableHandle reference](/refe
 ```ts
 const handle = cancellable(myTask);
 
-await handle.promise;       // await the result
+await handle;               // await the result
 handle.cancel("reason");    // cancel the task
 handle.isCancelled();       // check if cancelled
 handle.signal;              // AbortSignal
@@ -135,7 +135,7 @@ If the task throws and no retry or fallback is configured, the handle rejects wi
 try {
   await cancellable(async () => {
     throw new Error("task failed");
-  }).promise;
+  });
 } catch (error) {
   console.log(error); // Error: task failed
 }
@@ -155,7 +155,7 @@ const handle = cancellable(
   { fallback: { defaultData: true } },
 );
 
-const result = await handle.promise; // { defaultData: true } if fetch fails
+const result = await handle; // { defaultData: true } if fetch fails
 ```
 
 ### Retry
@@ -258,7 +258,7 @@ const handle = cancellable(async (token) => {
   return res.json() as Promise<{ id: number; name: string }>;
 });
 
-const user = await handle.promise; // { id: number; name: string }
+const user = await handle; // { id: number; name: string }
 ```
 
 ## Related APIs

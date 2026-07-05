@@ -34,24 +34,22 @@ import { parallel } from "@vgerbot/async/control-flow/parallel";
 import { parallel } from "@vgerbot/async";
 
 const handle = parallel(
-  [
-    async (token) => {
-      await token.sleep(100);
-      return "a";
-    },
-    async (token) => {
-      await token.sleep(50);
-      return "b";
-    },
-    async (token) => {
-      await token.sleep(75);
-      return "c";
-    },
-  ],
   { concurrency: 2 },
+  async (token) => {
+    await token.sleep(100);
+    return "a";
+  },
+  async (token) => {
+    await token.sleep(50);
+    return "b";
+  },
+  async (token) => {
+    await token.sleep(75);
+    return "c";
+  },
 );
 
-const results = await handle.promise;
+const results = await handle;
 // ["a", "b", "c"] — results are in the original order
 ```
 
@@ -65,10 +63,10 @@ const results = await handle.promise;
 ## API
 
 ```ts
-function parallel<T>(
-  tasks: AsyncTask<T>[],
-  options?: ParallelOptions<T>,
-): CancellableHandle<T[]>;
+function parallel(
+  options: ParallelOptions,
+  ...tasks: AsyncTask<unknown>[]
+): CancellableHandle<unknown[]>;
 ```
 
 `all` is an alias for `parallel`:
@@ -76,15 +74,15 @@ function parallel<T>(
 ```ts
 import { all } from "@vgerbot/async";
 
-const results = await all(tasks).promise;
+const results = await all({ concurrency: 2 }, task1, task2);
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `tasks` | `AsyncTask<T>[]` | — | Array of async tasks to execute. Each receives a `CancellableToken`. |
-| `options` | `ParallelOptions<T>` | `undefined` | Configuration options. |
+| `options` | `ParallelOptions` | — | Configuration options, including concurrency and cancellation settings. |
+| `...tasks` | `AsyncTask<T>[]` | — | Rest parameters of async tasks to execute. Each receives a `CancellableToken`. |
 
 ### `ParallelOptions`
 
@@ -104,9 +102,9 @@ const results = await all(tasks).promise;
 Returns a `CancellableHandle<T[]>` that resolves to an array of results in the same order as the input tasks.
 
 ```ts
-const handle = parallel(tasks, { concurrency: 3 });
+const handle = parallel({ concurrency: 3 }, task1, task2, task3);
 
-const results = await handle.promise;
+const results = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -119,16 +117,14 @@ handle.signal;
 ```ts
 // With concurrency: 2, at most 2 tasks run at any time
 const handle = parallel(
-  [
-    async (token) => { await token.sleep(100); return 1; },
-    async (token) => { await token.sleep(50); return 2; },
-    async (token) => { await token.sleep(75); return 3; },
-    async (token) => { await token.sleep(25); return 4; },
-  ],
   { concurrency: 2 },
+  async (token) => { await token.sleep(100); return 1; },
+  async (token) => { await token.sleep(50); return 2; },
+  async (token) => { await token.sleep(75); return 3; },
+  async (token) => { await token.sleep(25); return 4; },
 );
 
-const results = await handle.promise; // [1, 2, 3, 4]
+const results = await handle; // [1, 2, 3, 4]
 ```
 
 Without a concurrency limit, all tasks start immediately (equivalent to `Promise.all`).
@@ -139,11 +135,11 @@ If any task rejects, `parallel` rejects with the first error. Other in-flight ta
 
 ```ts
 try {
-  await parallel([
+  await parallel({},
     async () => "ok",
     async () => { throw new Error("fail"); },
     async () => "also ok",
-  ]).promise;
+  );
 } catch (error) {
   console.log("Parallel failed:", error);
 }
@@ -157,19 +153,19 @@ All tasks share a single `CancellableToken`. Calling `cancel()` on the handle si
 
 ```ts
 const handle = parallel(
-  Array.from({ length: 10 }, (_, i) =>
+  { concurrency: 3, name: "batchFetch" },
+  ...Array.from({ length: 10 }, (_, i) =>
     async (token) => {
       await token.sleep(1000);
       return i;
     }
   ),
-  { concurrency: 3, name: "batchFetch" },
 );
 
 setTimeout(() => handle.cancel("User navigated away"), 500);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Batch was cancelled");
@@ -182,24 +178,24 @@ try {
 `parallel` is generic over `T`, so all tasks must return the same type `T`.
 
 ```ts
-const handle = parallel([
+const handle = parallel({},
   async (token) => 1,
   async (token) => 2,
   async (token) => 3,
-]);
+);
 
-const results = await handle.promise; // number[]
+const results = await handle; // number[]
 ```
 
 For heterogeneous result types, use a union type or `reflect`:
 
 ```ts
-const handle = parallel<string | number>([
+const handle = parallel<string | number>({},
   async () => "hello",
   async () => 42,
-]);
+);
 
-const results = await handle.promise; // (string | number)[]
+const results = await handle; // (string | number)[]
 ```
 
 ## Related APIs

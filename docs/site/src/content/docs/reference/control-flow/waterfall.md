@@ -33,7 +33,7 @@ import { waterfall } from "@vgerbot/async/control-flow/waterfall";
 ```ts
 import { waterfall } from "@vgerbot/async";
 
-const handle = waterfall([
+const handle = waterfall(
   async (token) => {
     const res = await token.wrap(fetch("/api/user/1"));
     return res.json();
@@ -45,9 +45,9 @@ const handle = waterfall([
   async ({ user, posts }, token) => {
     return `${user.name} has ${posts.length} posts`;
   },
-]);
+);
 
-const summary = await handle.promise;
+const summary = await handle;
 ```
 
 ## When to use `waterfall`
@@ -62,51 +62,70 @@ const summary = await handle.promise;
 ```ts
 // Single task
 function waterfall<T1>(
-  tasks: [AsyncTask<T1>],
-  options?: CancellableOptions<T1>,
+  task1: WaterfallTask<unknown, T1>,
+): CancellableHandle<T1>;
+function waterfall<T1>(
+  task1: WaterfallTask<unknown, T1>,
+  options: CancellableOptions,
 ): CancellableHandle<T1>;
 
 // Two tasks
 function waterfall<T1, T2>(
-  tasks: [AsyncTask<T1>, WaterfallTask<T1, T2>],
-  options?: CancellableOptions<T2>,
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+): CancellableHandle<T2>;
+function waterfall<T1, T2>(
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+  options: CancellableOptions,
 ): CancellableHandle<T2>;
 
 // Three tasks
 function waterfall<T1, T2, T3>(
-  tasks: [AsyncTask<T1>, WaterfallTask<T1, T2>, WaterfallTask<T2, T3>],
-  options?: CancellableOptions<T3>,
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+  task3: WaterfallTask<T2, T3>,
+): CancellableHandle<T3>;
+function waterfall<T1, T2, T3>(
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+  task3: WaterfallTask<T2, T3>,
+  options: CancellableOptions,
 ): CancellableHandle<T3>;
 
 // Four tasks
 function waterfall<T1, T2, T3, T4>(
-  tasks: [
-    AsyncTask<T1>,
-    WaterfallTask<T1, T2>,
-    WaterfallTask<T2, T3>,
-    WaterfallTask<T3, T4>,
-  ],
-  options?: CancellableOptions<T4>,
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+  task3: WaterfallTask<T2, T3>,
+  task4: WaterfallTask<T3, T4>,
+): CancellableHandle<T4>;
+function waterfall<T1, T2, T3, T4>(
+  task1: WaterfallTask<unknown, T1>,
+  task2: WaterfallTask<T1, T2>,
+  task3: WaterfallTask<T2, T3>,
+  task4: WaterfallTask<T3, T4>,
+  options: CancellableOptions,
 ): CancellableHandle<T4>;
 ```
 
-The first task is an `AsyncTask<T1>` (receives only a token). Subsequent tasks receive the previous result and a token.
+The first task receives `undefined` as its first argument. Subsequent tasks receive the previous result and a token. Options can be passed as the last argument.
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `tasks` | `AsyncTask[]` | — | Array of async tasks. Each task after the first receives the previous task's result. |
-| `options` | `CancellableOptions<T>` | `undefined` | Cancellable configuration options. |
+| `task1` | `WaterfallTask<unknown, T1>` | — | The first task to execute. |
+| `...args` | `(WaterfallTask<unknown, unknown> \| CancellableOptions)[]` | — | Additional tasks, with an optional `CancellableOptions` as the last argument. |
 
 ### Return value
 
 Returns a `CancellableHandle<T>` that resolves to the result of the last task.
 
 ```ts
-const handle = waterfall(tasks);
+const handle = waterfall(task1, task2, task3);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -117,13 +136,13 @@ handle.signal;
 Tasks are executed sequentially. The first task receives a `CancellableToken`. Each subsequent task receives the resolved value of the previous task and the same token. If any task rejects, the waterfall stops and the handle rejects with that error.
 
 ```ts
-const handle = waterfall([
+const handle = waterfall(
   async (token) => 1,
   async (n, token) => n + 10,
   async (n, token) => n * 2,
-]);
+);
 
-const result = await handle.promise; // 22
+const result = await handle; // 22
 ```
 
 Tasks can also be `CancellableHandle` instances or `Promise` instances.
@@ -134,11 +153,11 @@ If any task in the waterfall rejects, the handle rejects immediately with that e
 
 ```ts
 try {
-  await waterfall([
+  await waterfall(
     async () => "step1",
     async () => { throw new Error("step2 failed"); },
     async () => "step3 (never runs)",
-  ]).promise;
+  );
 } catch (error) {
   console.log("Waterfall failed:", error);
 }
@@ -149,15 +168,16 @@ try {
 All tasks share a single `CancellableToken`. Calling `cancel()` on the handle signals cancellation to the currently running task and prevents subsequent tasks from starting.
 
 ```ts
-const handle = waterfall([
+const handle = waterfall(
   async (token) => { await token.sleep(5000); return "slow"; },
   async (result) => `${result} done`,
-], { name: "dataPipeline" });
+  { name: "dataPipeline" },
+);
 
 setTimeout(() => handle.cancel("User cancelled"), 100);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Waterfall was cancelled");
@@ -170,13 +190,13 @@ try {
 For up to four tasks, `waterfall` provides typed overloads so the result of each task is passed with the correct type to the next.
 
 ```ts
-const handle = waterfall([
+const handle = waterfall(
   async (token) => 10,                                    // returns number
   async (n: number, token) => `Value: ${n}`,             // receives number, returns string
   async (s: string, token) => ({ result: s }),           // receives string, returns object
-]);
+);
 
-const result = await handle.promise; // { result: string }
+const result = await handle; // { result: string }
 ```
 
 ## Related APIs

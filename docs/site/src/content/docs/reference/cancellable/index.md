@@ -35,7 +35,7 @@ const handle = cancellable(async (token) => {
 setTimeout(() => handle.cancel("User navigated away"), 1000);
 
 try {
-  const result = await handle.promise;
+  const result = await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Cancelled:", error.reason);

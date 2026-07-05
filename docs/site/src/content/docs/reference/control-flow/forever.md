@@ -42,7 +42,7 @@ const handle = forever(async (token) => {
 setTimeout(() => handle.cancel(), 5000);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   console.log("Loop stopped");
 }
@@ -110,7 +110,7 @@ try {
       throw new Error("Server error, stopping loop");
     }
     await token.sleep(1000);
-  }).promise;
+  });
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Loop was cancelled");
@@ -154,14 +154,14 @@ controller.abort();
 
 ## TypeScript tips
 
-`forever` returns `CancellableHandle<never>`, reflecting that it never resolves. This means `await handle.promise` will never return a value—it will always throw.
+`forever` returns `CancellableHandle<never>`, reflecting that it never resolves. This means `await handle` will never return a value—it will always throw.
 
 ```ts
 const handle = forever(async (token) => {
   // task logic
 });
 
-// Type of handle.promise is Promise<never>
+// Type of handle is Promise<never>
 // It only rejects, never resolves
 ```
 

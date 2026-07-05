@@ -42,7 +42,7 @@ const handle = reduce(
   0,
 );
 
-const result = await handle.promise; // 6
+const result = await handle; // 6
 ```
 
 Object input:
@@ -54,7 +54,7 @@ const handle = reduce(
   "",
 );
 
-const result = await handle.promise; // "a=1;b=2;"
+const result = await handle; // "a=1;b=2;"
 ```
 
 ## When to use `reduce`
@@ -134,7 +134,7 @@ const handle = reduce(
   "",
 );
 
-const result = await handle.promise; // ",1,2,3"
+const result = await handle; // ",1,2,3"
 ```
 
 ## Related APIs

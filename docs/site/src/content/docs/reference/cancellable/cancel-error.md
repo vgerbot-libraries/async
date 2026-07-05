@@ -41,7 +41,7 @@ const handle = cancellable(async (token) => {
 setTimeout(() => handle.cancel("User navigated away"), 100);
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Cancelled:", error.reason);
@@ -57,7 +57,7 @@ try {
 class CancelError extends Error {
   readonly reason: unknown;
 
-  get rawReason: unknown;
+  get rawReason(): unknown;
 
   static fromReason(message: string, rawReason: unknown): CancelError;
 }
@@ -91,7 +91,7 @@ console.log(error.reason);  // "User cancelled"
 
 ```ts
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     // Handle cancellation gracefully
@@ -107,7 +107,7 @@ try {
 
 ```ts
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     if (error.reason === "timeout") {

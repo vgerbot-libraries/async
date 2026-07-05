@@ -42,7 +42,7 @@ const handle = groupBy(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // { odd: [1, 3], even: [2, 4] }
+const result = await handle; // { odd: [1, 3], even: [2, 4] }
 ```
 
 ## When to use `groupBy`
@@ -112,7 +112,7 @@ const handle = groupBy(
   async (user) => user.role, // PropertyKey (string | number | symbol)
 );
 
-const groups = await handle.promise; // Record<string, User[]>
+const groups = await handle; // Record<string, User[]>
 ```
 
 ## Related APIs

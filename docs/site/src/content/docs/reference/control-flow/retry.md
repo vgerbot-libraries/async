@@ -46,7 +46,7 @@ const handle = retry(
   },
 );
 
-const data = await handle.promise;
+const data = await handle;
 ```
 
 ## When to use `retry`
@@ -90,7 +90,7 @@ Returns a `CancellableHandle<T>` that resolves to the task result or rejects wit
 ```ts
 const handle = retry(myTask, { maxAttempts: 5 });
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -130,7 +130,7 @@ try {
       throw new Error("Always fails");
     },
     { maxAttempts: 3, delay: 100 },
-  ).promise;
+  );
 } catch (error) {
   console.log("All retries exhausted:", error);
 }
@@ -179,7 +179,7 @@ const handle = retry(
   { maxAttempts: 3 },
 );
 
-const user = await handle.promise; // { id: number; name: string }
+const user = await handle; // { id: number; name: string }
 ```
 
 ## Related APIs

@@ -42,7 +42,7 @@ const handle = filter(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // [2, 4]
+const result = await handle; // [2, 4]
 ```
 
 Object input:
@@ -53,7 +53,7 @@ const handle = filter(
   async (value, key) => key !== "a" && value >= 2,
 );
 
-const result = await handle.promise; // [2, 3]
+const result = await handle; // [2, 3]
 ```
 
 ## When to use `filter`
@@ -123,7 +123,7 @@ const handle = filter(
   async (value, key, token) => value > 1,
 );
 
-const result = await handle.promise; // number[] → [2, 3]
+const result = await handle; // number[] → [2, 3]
 ```
 
 ## Related APIs

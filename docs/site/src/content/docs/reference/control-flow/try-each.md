@@ -51,7 +51,7 @@ const handle = tryEach([
   },
 ]);
 
-const data = await handle.promise; // First successful response
+const data = await handle; // First successful response
 ```
 
 ## When to use `tryEach`
@@ -84,7 +84,7 @@ Returns a `CancellableHandle<T>` that resolves to the first successful result, o
 ```ts
 const handle = tryEach(tasks);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -101,7 +101,7 @@ const handle = tryEach([
   async () => "success",
 ]);
 
-const result = await handle.promise; // "success"
+const result = await handle; // "success"
 ```
 
 If the tasks array is empty, `tryEach` throws an error immediately.
@@ -115,7 +115,7 @@ try {
   await tryEach([
     async () => { throw new Error("fail 1"); },
     async () => { throw new Error("fail 2"); },
-  ]).promise;
+  ]);
 } catch (error) {
   console.log("All tasks failed:", error); // Error: fail 2
 }
@@ -147,7 +147,7 @@ const handle = tryEach([
   async () => "fallback text",
 ]);
 
-const result = await handle.promise; // string
+const result = await handle; // string
 ```
 
 ## Related APIs

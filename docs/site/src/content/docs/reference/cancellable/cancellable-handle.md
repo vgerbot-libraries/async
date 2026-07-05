@@ -39,7 +39,7 @@ const handle = cancellable(async (token) => {
 });
 
 // Await the result
-const result = await handle.promise;
+const result = await handle;
 
 // Or cancel it
 handle.cancel("No longer needed");
@@ -51,24 +51,26 @@ console.log(handle.isCancelled());
 ## API
 
 ```ts
-class CancellableHandle<T> implements PromiseLike<T> {
+class CancellableHandle<T> extends Defer<T> {
   readonly promise: Promise<T>;
   readonly signal: AbortSignal;
+  readonly name: string | undefined;
 
   cancel(reason?: unknown): void;
   isCancelled(): boolean;
   get cancelError(): CancelError | null;
+  get cancelReason(): CancelError | null;
 
   then<TResult1 = T, TResult2 = never>(
     onfulfilled?: (value: T) => TResult1 | PromiseLike<TResult1>,
     onrejected?: (reason: unknown) => TResult2 | PromiseLike<TResult2>,
-  ): Promise<TResult1 | TResult2>;
+  ): Defer<TResult1 | TResult2>;
 
   catch<TResult = never>(
     onrejected?: (reason: unknown) => TResult | PromiseLike<TResult>,
-  ): Promise<T | TResult>;
+  ): Defer<T | TResult>;
 
-  finally(onfinally?: () => void): Promise<T>;
+  finally(onfinally?: () => void): Defer<T>;
 }
 ```
 
@@ -76,9 +78,11 @@ class CancellableHandle<T> implements PromiseLike<T> {
 
 | Property | Type | Description |
 | --- | --- | --- |
-| `promise` | `Promise<T>` | The underlying promise. Await this to get the result. |
+| `promise` | `Promise<T>` | The underlying promise. Inherited from `Defer<T>`. |
 | `signal` | `AbortSignal` | The `AbortSignal` associated with this handle. Can be passed to other APIs. |
+| `name` | `string \| undefined` | Optional name assigned to the task (from `CancellableOptions.name`). |
 | `cancelError` | `CancelError \| null` | The `CancelError` if the handle was cancelled, otherwise `null`. |
+| `cancelReason` | `CancelError \| null` | Backward-compatible alias for `cancelError`. |
 
 ### Methods
 
@@ -120,8 +124,8 @@ handle.catch((error) => console.error(error));
 handle.finally(() => console.log("done"));
 ```
 
-> **Prefer `.promise` for clarity**
-> While `await handle` works, using `await handle.promise` is more explicit and recommended for documentation clarity.
+> **Prefer `await handle`**
+> `CancellableHandle` extends `Defer<T>` which implements `PromiseLike<T>`, so `await handle` is the recommended concise form. Use `handle.promise` only when you need to pass the raw `Promise` to code that doesn't understand `PromiseLike`.
 
 ## Cancellation
 
@@ -146,7 +150,7 @@ const handle = cancellable(
 handle.cancel("User cancelled");
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   if (error instanceof CancelError) {
     console.log(error.reason); // "User cancelled"
@@ -166,7 +170,7 @@ const handle = cancellable(async (token) => {
     },
     { signal: token.signal },
   );
-  return fetchHandle.promise;
+  return fetchHandle;
 });
 
 // Cancelling the outer handle cancels the inner one too
@@ -180,7 +184,7 @@ handle.cancel();
 ```ts
 const handle: CancellableHandle<string> = cancellable(async () => "hello");
 
-const value: string = await handle.promise;
+const value: string = await handle;
 ```
 
 ## Related APIs

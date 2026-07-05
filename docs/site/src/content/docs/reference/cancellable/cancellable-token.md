@@ -66,7 +66,6 @@ class CancellableToken {
 
   // Promise wrapping
   wrap<T>(p: CancellableHandle<T> | Promise<T>): Promise<T>;
-  defer<T>(): Defer<T>;
 
   // Time utilities
   sleep(ms: number): CancellableHandle<void>;
@@ -162,29 +161,6 @@ async (token) => {
 
 > **`wrap` vs `signal`**
 > Use `token.wrap(promise)` for promises that don't natively support `AbortSignal`. Use `token.signal` directly with APIs that accept it (e.g., `fetch(url, { signal: token.signal })`).
-
-#### `defer<T>()`
-
-Creates a `Defer<T>` that is automatically rejected with a `CancelError` when the token is cancelled. Use this instead of `new Promise()` when you need external control over resolve/reject with cancellation support.
-
-If the token is already cancelled, the returned `Defer` is immediately rejected.
-
-```ts
-async (token) => {
-  // Wait for a DOM event with cancellation
-  const clickEvent = token.defer<MouseEvent>();
-  button.addEventListener("click", clickEvent.resolve, {
-    once: true,
-    signal: token.signal,
-  });
-
-  // Resolves on click, rejects with CancelError if cancelled
-  return (await clickEvent).target;
-}
-```
-
-> **`defer` vs `wrap`**
-> Use `token.defer()` when you need a deferred you control (e.g., bridging event callbacks). Use `token.wrap(promise)` when you already have a promise to race against cancellation.
 
 #### `sleep(ms)`
 

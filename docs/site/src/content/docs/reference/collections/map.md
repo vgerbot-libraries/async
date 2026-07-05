@@ -43,7 +43,7 @@ const handle = map(
   { concurrency: 2 },
 );
 
-const result = await handle.promise; // [2, 4, 6]
+const result = await handle; // [2, 4, 6]
 ```
 
 Object input:
@@ -54,7 +54,7 @@ const handle = map(
   async (value, key, token) => `${key}:${value * 10}`,
 );
 
-const result = await handle.promise; // ["a:10", "b:20"]
+const result = await handle; // ["a:10", "b:20"]
 ```
 
 ## When to use `map`
@@ -117,7 +117,7 @@ try {
   await map([1, 2, 3], async (item) => {
     if (item === 2) throw new Error("fail");
     return item;
-  }).promise;
+  });
 } catch (error) {
   console.log("map failed:", error);
 }

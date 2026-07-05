@@ -33,7 +33,7 @@ import { any } from "@vgerbot/async/control-flow/any";
 ```ts
 import { any } from "@vgerbot/async";
 
-const handle = any([
+const handle = any({},
   async (token) => {
     const res = await token.wrap(fetch("https://api1.example.com/data"));
     if (!res.ok) throw new Error("api1 down");
@@ -44,9 +44,9 @@ const handle = any([
     if (!res.ok) throw new Error("api2 down");
     return res.json();
   },
-]);
+);
 
-const data = await handle.promise; // First successful response
+const data = await handle; // First successful response
 ```
 
 ## When to use `any`
@@ -59,27 +59,27 @@ const data = await handle.promise; // First successful response
 ## API
 
 ```ts
-function any<T>(
-  tasks: AsyncTask<T>[],
-  options?: CancellableOptions<T>,
-): CancellableHandle<T>;
+function any(
+  options: CancellableOptions,
+  ...tasks: AsyncTask<unknown>[]
+): CancellableHandle<unknown>;
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `tasks` | `AsyncTask<T>[]` | — | Array of async tasks to execute. Each receives a `CancellableToken`. |
-| `options` | `CancellableOptions<T>` | `undefined` | Cancellable configuration options. |
+| `options` | `CancellableOptions` | — | Cancellable configuration options. |
+| `...tasks` | `AsyncTask<T>[]` | — | Rest parameters of async tasks to execute. Each receives a `CancellableToken`. |
 
 ### Return value
 
 Returns a `CancellableHandle<T>` that resolves with the first task to fulfill, or rejects with an `AggregateError` if all tasks reject.
 
 ```ts
-const handle = any(tasks);
+const handle = any({}, task1, task2);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -90,11 +90,11 @@ handle.signal;
 All tasks start concurrently and share a `CancellableToken`. The handle resolves as soon as the first task fulfills. Remaining tasks receive a cancellation signal.
 
 ```ts
-const handle = any([
+const handle = any({},
   async (token) => { await token.sleep(100); throw new Error("fail"); },
   async (token) => { await token.sleep(200); return "success"; },
   async (token) => { await token.sleep(500); return "also success"; },
-]);
+);
 
 // Resolves with "success" after 200ms
 // First task's rejection is ignored
@@ -107,10 +107,10 @@ If all tasks reject, the handle rejects with an `AggregateError` containing all 
 
 ```ts
 try {
-  await any([
+  await any({},
     async () => { throw new Error("fail1"); },
     async () => { throw new Error("fail2"); },
-  ]).promise;
+  );
 } catch (error) {
   if (error instanceof AggregateError) {
     console.log("All tasks failed:", error.errors);
@@ -123,9 +123,9 @@ try {
 Calling `cancel()` on the handle cancels all participating tasks.
 
 ```ts
-const handle = any([
+const handle = any({ name: "anyOperation" },
   async (token) => { await token.sleep(5000); return "result"; },
-], { name: "anyOperation" });
+);
 
 setTimeout(() => handle.cancel("User cancelled"), 100);
 ```
@@ -135,12 +135,12 @@ setTimeout(() => handle.cancel("User cancelled"), 100);
 `any` is generic over `T`. All tasks must return the same type.
 
 ```ts
-const handle = any([
+const handle = any({},
   async () => 1,
   async () => 2,
-]);
+);
 
-const result = await handle.promise; // number
+const result = await handle; // number
 ```
 
 ## Related APIs

@@ -43,7 +43,7 @@ const handle = omit(
   },
 );
 
-const result = await handle.promise; // { a: 1, c: 3 }
+const result = await handle; // { a: 1, c: 3 }
 ```
 
 ## When to use `omit`
@@ -105,7 +105,7 @@ const handle = omit(
   async (value, key) => key === "b",
 );
 
-const result = await handle.promise; // { a: 1, c: 3 }
+const result = await handle; // { a: 1, c: 3 }
 ```
 
 ## Related APIs

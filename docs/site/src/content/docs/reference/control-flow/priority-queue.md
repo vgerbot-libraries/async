@@ -38,7 +38,7 @@ const queue = priorityQueue(
     console.log(`Processing: ${task.name}`);
     await token.sleep(100);
   },
-  2, // concurrency
+  { concurrency: 2 },
 );
 
 queue.push({ name: "low priority" }, 1);
@@ -58,51 +58,51 @@ queue.push({ name: "medium priority" }, 5);
 ## API
 
 ```ts
-function priorityQueue<T>(
-  worker: (task: T, token: CancellableToken) => Promise<void>,
-  concurrency?: number,
-): PriorityTaskQueue<T>;
+function priorityQueue<T, R>(
+  worker: QueueWorker<T, R>,
+  options?: QueueOptions,
+): PriorityTaskQueue<T, R>;
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `worker` | `(task, token) => Promise<void>` | — | Async function that processes each task. Receives the task data and a `CancellableToken`. |
-| `concurrency` | `number` | `1` | Maximum number of tasks to process simultaneously. |
+| `worker` | `(task, token) => Promise<R>` | — | Async function that processes each task. Receives the task data and a `CancellableToken`. |
+| `options` | `QueueOptions` | `undefined` | Queue options including `concurrency`, `startPaused`, `signal`, `name`, and `timeout`. |
 
 ### Return value
 
-Returns a `PriorityTaskQueue<T>` instance with the following API:
+Returns a `PriorityTaskQueue<T, R>` instance with the following API:
 
 | Method/Property | Type | Description |
 | --- | --- | --- |
-| `push(task, priority)` | `CancellableHandle<void>` | Enqueue a single task with a priority. |
-| `pushMany(tasks, priority)` | `CancellableHandle<void>` | Enqueue multiple tasks with the same priority. |
+| `push(task, priority)` | `Promise<R>` | Enqueue a single task with a priority. |
+| `pushMany(tasks, priority)` | `Promise<R[]>` | Enqueue multiple tasks with the same priority. |
 | `pause()` | `void` | Pause task processing. |
 | `resume()` | `void` | Resume task processing. |
 | `cancel(reason?)` | `void` | Cancel the queue and all pending tasks. |
 | `isCancelled()` | `boolean` | Whether the queue has been cancelled. |
-| `size` | `number` | Number of pending tasks. |
-| `concurrency` | `number` | Maximum concurrent tasks (can be set). |
-| `running()` | `number` | Number of currently running tasks. |
-| `idle()` | `boolean` | Whether no tasks are running. |
+| `length` | `number` | Number of pending tasks. |
+| `running` | `number` | Number of currently running tasks. |
+| `idle` | `boolean` | Whether no tasks are running or pending. |
+| `paused` | `boolean` | Whether scheduling is paused. |
 | `onIdle()` | `Promise<void>` | Resolves when the queue becomes idle. |
 | `onEmpty()` | `Promise<void>` | Resolves when the queue becomes empty. |
 | `onSaturated()` | `Promise<void>` | Resolves when the queue reaches capacity. |
 | `onSizeLessThan(threshold)` | `Promise<void>` | Resolves when size drops below threshold. |
-| `onError()` | `Promise<unknown>` | Resolves with the first error. |
+| `onError()` | `Promise<QueueTaskError<T>>` | Resolves with the next task error observed by the queue. |
 
 ## Execution model
 
-`priorityQueue` uses a max-heap internally to order tasks by priority. Higher priority values are dequeued first. When multiple tasks have the same priority, they are processed in FIFO order within that priority level.
+`priorityQueue` orders pending tasks by priority before scheduling. Higher priority values are dequeued first.
 
 ```ts
 const queue = priorityQueue(
   async (task, token) => {
     console.log(`[${task.priority}] ${task.name}`);
   },
-  1,
+  { concurrency: 1 },
 );
 
 queue.push({ name: "A", priority: 1 }, 1);
@@ -115,13 +115,13 @@ queue.push({ name: "D", priority: 10 }, 10);
 
 ## Backpressure
 
-Use `onSaturated` and `onSizeLessThan` to implement backpressure:
+Use `onSizeLessThan` to implement producer backpressure:
 
 ```ts
-const queue = priorityQueue(worker, 3);
+const queue = priorityQueue(worker, { concurrency: 3 });
 
 for (const item of largeDataset) {
-  await queue.onSaturated(); // Wait when at capacity
+  await queue.onSizeLessThan(10);
   queue.push(item, item.priority);
 }
 
@@ -130,18 +130,19 @@ await queue.onIdle(); // Wait for all tasks to complete
 
 ## Error handling
 
-If a worker throws an error, the `onError` promise resolves with that error. The queue continues processing remaining tasks.
+If a worker throws an error, the `onError` promise resolves with `{ task, error }`. The queue continues processing remaining tasks.
 
 ```ts
 const queue = priorityQueue(async (task, token) => {
   if (task.shouldFail) throw new Error("task failed");
-}, 2);
+}, { concurrency: 2 });
 
 queue.push({ shouldFail: true }, 1);
 queue.push({ shouldFail: false }, 1);
 
-const error = await queue.onError();
-console.log("First error:", error);
+const queueError = await queue.onError();
+console.log("Task:", queueError.task);
+console.log("Cause:", queueError.error);
 ```
 
 ## Cancellation
@@ -149,7 +150,7 @@ console.log("First error:", error);
 Call `cancel()` to stop the queue. All pending tasks are rejected with a `CancelError`, and running tasks receive a cancellation signal.
 
 ```ts
-const queue = priorityQueue(worker, 3);
+const queue = priorityQueue(worker, { concurrency: 3 });
 
 queue.push(task1, 1);
 queue.push(task2, 5);
@@ -160,7 +161,7 @@ queue.cancel("Shutting down");
 
 ## TypeScript tips
 
-`priorityQueue` is generic over `T`, so the task type is inferred from the worker's parameter.
+`priorityQueue` is generic over `T` (task type) and `R` (worker result type).
 
 ```ts
 interface Job {
@@ -168,11 +169,12 @@ interface Job {
   data: string;
 }
 
-const queue = priorityQueue<Job>(
+const queue = priorityQueue<Job, string>(
   async (job, token) => {
     await token.wrap(fetch(`/api/jobs/${job.id}`, { body: job.data }));
+    return `ok:${job.id}`;
   },
-  4,
+  { concurrency: 4 },
 );
 
 queue.push({ id: 1, data: "hello" }, 5);

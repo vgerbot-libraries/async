@@ -42,7 +42,7 @@ const handle = some(
   { concurrency: 2 },
 );
 
-const hasOdd = await handle.promise; // true
+const hasOdd = await handle; // true
 ```
 
 ## When to use `some`
@@ -108,7 +108,7 @@ All evaluations share a single `CancellableToken`. Calling `cancel()` signals ca
 The return type is always `boolean`. Empty collections return `false`.
 
 ```ts
-const hasInvalid = await some(items, async (item) => !item.isValid).promise;
+const hasInvalid = await some(items, async (item) => !item.isValid);
 if (hasInvalid) {
   console.warn("Some items are invalid");
 }

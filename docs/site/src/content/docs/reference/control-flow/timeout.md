@@ -42,7 +42,7 @@ const handle = timeout(
 );
 
 try {
-  await handle.promise;
+  await handle;
 } catch (error) {
   console.log("Task timed out");
 }
@@ -80,7 +80,7 @@ Returns a `CancellableHandle<T>` that resolves to the task result or rejects wit
 ```ts
 const handle = timeout(myTask, 5000);
 
-const result = await handle.promise;
+const result = await handle;
 handle.cancel("No longer needed");
 handle.isCancelled();
 handle.signal;
@@ -99,7 +99,7 @@ const handle = timeout(
   5000,
 );
 
-const data = await handle.promise;
+const data = await handle;
 ```
 
 ## Error handling
@@ -112,7 +112,7 @@ import { CancelError } from "@vgerbot/async";
 try {
   await timeout(async (token) => {
     await token.sleep(10_000);
-  }, 1000).promise;
+  }, 1000);
 } catch (error) {
   if (error instanceof CancelError) {
     console.log("Timed out:", error.message);
@@ -132,7 +132,7 @@ const handle = timeout(
   { fallback: "default value" },
 );
 
-const result = await handle.promise; // "default value"
+const result = await handle; // "default value"
 ```
 
 ## Cancellation
@@ -159,7 +159,7 @@ const handle = timeout(
   3000,
 );
 
-const user = await handle.promise; // { id: number; name: string }
+const user = await handle; // { id: number; name: string }
 ```
 
 ## Related APIs

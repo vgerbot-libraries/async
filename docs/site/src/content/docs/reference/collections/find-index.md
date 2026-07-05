@@ -41,7 +41,7 @@ const handle = findIndex(
   },
 );
 
-const index = await handle.promise; // 2
+const index = await handle; // 2
 ```
 
 ## When to use `findIndex`
@@ -110,7 +110,7 @@ The return type is always `number`. Check for `-1` before using the index.
 const index = await findIndex(
   items,
   async (item) => item.isValid,
-).promise;
+);
 
 if (index !== -1) {
   console.log("Found at index:", index);
