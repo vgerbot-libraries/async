@@ -34,7 +34,7 @@ describe("ThrottleTaskExecutor", () => {
 		await vi.runAllTimersAsync();
 
 		expect(taskFn).toHaveBeenCalledTimes(1);
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should execute on trailing edge by default", async () => {
@@ -146,7 +146,7 @@ describe("ThrottleTaskExecutor", () => {
 
 		await vi.runAllTimersAsync();
 
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should handle task errors", async () => {
@@ -158,7 +158,7 @@ describe("ThrottleTaskExecutor", () => {
 
 		await vi.runAllTimersAsync();
 
-		await expect(promise.promise).rejects.toThrow("Task failed");
+		await expect(promise).rejects.toThrow("Task failed");
 	});
 
 	test("should supersede pending tasks", async () => {
@@ -174,6 +174,6 @@ describe("ThrottleTaskExecutor", () => {
 
 		await vi.runAllTimersAsync();
 
-		await expect(promise3.promise).resolves.toBe(3);
+		await expect(promise3).resolves.toBe(3);
 	});
 });

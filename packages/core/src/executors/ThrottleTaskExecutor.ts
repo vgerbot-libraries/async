@@ -1,5 +1,4 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { Defer } from "../utils/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
 import { ITaskExecutor, TaskCancelOptions, TaskOptions } from "./ITaskExecutor";
 
@@ -28,7 +27,7 @@ export class ThrottleTaskExecutor implements ITaskExecutor {
 		});
 	}
 
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Defer<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
 		return this.executor.exec(task, options);
 	}
 

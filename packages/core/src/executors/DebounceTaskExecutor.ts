@@ -58,7 +58,7 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		this.maxing = this.maxWait !== undefined;
 	}
 
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Defer<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
 		this.checkCancelled("Debounce executor permanently cancelled");
 
 		const time = Date.now();
@@ -76,13 +76,13 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 		if (isInvoking) {
 			if (this.timerId === undefined) {
 				this.leadingEdge(time);
-				return defer;
+				return defer.promise;
 			}
 			if (this.maxing) {
 				this.clearTimer();
 				this.startTimer();
 				this.invoke(time);
-				return defer;
+				return defer.promise;
 			}
 		}
 
@@ -90,7 +90,7 @@ export class DebounceTaskExecutor extends BaseTaskExecutor {
 			this.startTimer();
 		}
 
-		return defer;
+		return defer.promise;
 	}
 
 	protected onCancel(reason?: unknown): void {

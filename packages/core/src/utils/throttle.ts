@@ -54,7 +54,7 @@ export function throttle<T, Args extends unknown[] = unknown[]>(
 	const throttled = (...args: Args): Promise<T> => {
 		return executor.exec(async (token: CancellableToken) => {
 			return fn(...args);
-		}).promise as Promise<T>;
+		});
 	};
 
 	throttled.cancel = () => executor.cancel();

@@ -38,7 +38,7 @@ describe("DebounceTaskExecutor", () => {
 
 		await vi.runAllTimersAsync();
 		expect(taskFn).toHaveBeenCalledTimes(1);
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should execute on trailing edge by default", async () => {
@@ -53,7 +53,7 @@ describe("DebounceTaskExecutor", () => {
 		await vi.runAllTimersAsync();
 
 		expect(taskFn).toHaveBeenCalledTimes(1);
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should supersede pending tasks", async () => {
@@ -63,13 +63,13 @@ describe("DebounceTaskExecutor", () => {
 		const promise2 = executor.exec(async () => 2);
 		const promise3 = executor.exec(async () => 3);
 
-		await expect(promise1.promise).rejects.toBeInstanceOf(CancelError);
-		await expect(promise2.promise).rejects.toBeInstanceOf(CancelError);
+		await expect(promise1).rejects.toBeInstanceOf(CancelError);
+		await expect(promise2).rejects.toBeInstanceOf(CancelError);
 
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
 
-		await expect(promise3.promise).resolves.toBe(3);
+		await expect(promise3).resolves.toBe(3);
 	});
 
 	test("should respect maxWait option", async () => {
@@ -101,7 +101,7 @@ describe("DebounceTaskExecutor", () => {
 
 		executor.cancel();
 
-		await expect(promise.promise).rejects.toBeInstanceOf(CancelError);
+		await expect(promise).rejects.toBeInstanceOf(CancelError);
 		expect(executor.isCancelled()).toBe(true);
 	});
 
@@ -117,7 +117,7 @@ describe("DebounceTaskExecutor", () => {
 		await vi.runAllTimersAsync();
 
 		expect(taskFn).toHaveBeenCalledTimes(1);
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should report pending status", () => {
@@ -165,7 +165,7 @@ describe("DebounceTaskExecutor", () => {
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
 
-		await expect(promise.promise).resolves.toBe(42);
+		await expect(promise).resolves.toBe(42);
 	});
 
 	test("should handle task errors", async () => {
@@ -178,7 +178,7 @@ describe("DebounceTaskExecutor", () => {
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
 
-		await expect(promise.promise).rejects.toThrow("Task failed");
+		await expect(promise).rejects.toThrow("Task failed");
 	});
 
 	test("should propagate task name to token", async () => {
@@ -191,7 +191,7 @@ describe("DebounceTaskExecutor", () => {
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
 
-		await expect(promise.promise).resolves.toBe("Load data");
+		await expect(promise).resolves.toBe("Load data");
 	});
 
 	test("should cancel pending task by kind without disabling executor", async () => {
@@ -201,12 +201,12 @@ describe("DebounceTaskExecutor", () => {
 
 		executor.cancel({ kind: "alpha" });
 
-		await expect(pending.promise).rejects.toBeInstanceOf(CancelError);
+		await expect(pending).rejects.toBeInstanceOf(CancelError);
 		expect(executor.isCancelled()).toBe(false);
 
 		const next = executor.exec(async () => 2);
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
-		await expect(next.promise).resolves.toBe(2);
+		await expect(next).resolves.toBe(2);
 	});
 });
