@@ -1,4 +1,5 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+import { CancelError, cancellable } from "../../src/cancellable";
 import { constant } from "../../src/utils/constant";
 
 describe("constant", () => {
@@ -21,8 +22,31 @@ describe("constant", () => {
 		await expect(undefinedHandle.promise).resolves.toBeUndefined();
 	});
 
-	test("respects timeout option", async () => {
-		const handle = constant(42, { timeout: 100 });
-		await expect(handle.promise).resolves.toBe(42);
+	test("resolves immediately before timeout fires", async () => {
+		vi.useFakeTimers();
+		try {
+			const handle = constant(42, { timeout: 100 });
+			await expect(handle.promise).resolves.toBe(42);
+			vi.advanceTimersByTime(100);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	test("timeout cancels a slow cancellable task", async () => {
+		vi.useFakeTimers();
+		try {
+			const handle = cancellable(
+				async (token) => {
+					await token.sleep(1000);
+					return 42;
+				},
+				{ timeout: 10, name: "slow-task" },
+			);
+			vi.advanceTimersByTime(10);
+			await expect(handle.promise).rejects.toBeInstanceOf(CancelError);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

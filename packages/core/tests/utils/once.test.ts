@@ -31,13 +31,15 @@ describe("once", () => {
 		expect(result2).toBe(10); // Cached value
 	});
 
-	test("handles errors on first call", async () => {
+	test("caches error on first call and does not re-execute", async () => {
 		let count = 0;
 		const fn = once(async () => {
 			count++;
 			throw new Error("test error");
 		});
 
+		await expect(fn().promise).rejects.toThrow("test error");
+		expect(count).toBe(1);
 		await expect(fn().promise).rejects.toThrow("test error");
 		expect(count).toBe(1);
 	});

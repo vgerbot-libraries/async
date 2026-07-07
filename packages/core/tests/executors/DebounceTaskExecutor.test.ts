@@ -85,13 +85,15 @@ describe("DebounceTaskExecutor", () => {
 		executor.exec(taskFn);
 		vi.advanceTimersByTime(50);
 
+		// At 150ms total, maxWait (200ms) not yet reached
+		expect(taskFn).not.toHaveBeenCalled();
+
 		executor.exec(taskFn);
 		vi.advanceTimersByTime(50);
 
+		// At 200ms total, maxWait triggers invocation
 		await vi.runAllTimersAsync();
-
-		// Should have been invoked due to maxWait
-		expect(taskFn).toHaveBeenCalled();
+		expect(taskFn).toHaveBeenCalledTimes(1);
 	});
 
 	test("should cancel pending tasks", async () => {
@@ -141,15 +143,18 @@ describe("DebounceTaskExecutor", () => {
 		});
 		const taskFn = vi.fn(async () => 42);
 
-		executor.exec(taskFn);
-		await vi.runAllTimersAsync();
-
+		const leadingPromise = executor.exec(taskFn);
 		expect(taskFn).toHaveBeenCalledTimes(1);
 
-		executor.exec(taskFn);
+		vi.advanceTimersByTime(50);
+		const trailingPromise = executor.exec(taskFn);
+		expect(taskFn).toHaveBeenCalledTimes(1);
+
 		vi.advanceTimersByTime(100);
 		await vi.runAllTimersAsync();
 
+		await expect(leadingPromise).resolves.toBe(42);
+		await expect(trailingPromise).resolves.toBe(42);
 		expect(taskFn).toHaveBeenCalledTimes(2);
 	});
 

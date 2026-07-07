@@ -45,18 +45,14 @@ describe("auto", () => {
 			{ concurrency: 2 },
 		);
 
-		await expect(handle.promise).rejects.toBeInstanceOf(AutoExecutionError);
-
-		await handle.promise.catch((error) => {
+		const executionError = await handle.promise.catch((error) => {
 			expect(error).toBeInstanceOf(AutoExecutionError);
-			const executionError = error as AutoExecutionError<
-				Record<string, unknown>
-			>;
-			expect(executionError.taskName).toContain("boom");
-			expect(executionError.partialResults).toMatchObject({
-				start: "ok",
-				slow: "slow",
-			});
+			return error as AutoExecutionError<Record<string, unknown>>;
+		});
+		expect(executionError.taskName).toContain("boom");
+		expect(executionError.partialResults).toMatchObject({
+			start: "ok",
+			slow: "slow",
 		});
 
 		expect(started).toEqual(expect.arrayContaining(["slow", "boom"]));

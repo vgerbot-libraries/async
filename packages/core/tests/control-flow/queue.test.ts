@@ -33,7 +33,7 @@ describe("queue", () => {
 	test("supports startPaused, resume and pushMany", async () => {
 		const q = queue<number, number>(async (task) => task * 3, {
 			startPaused: true,
-			concurrency: 0,
+			concurrency: 1,
 		});
 
 		expect(q.paused).toBe(true);
