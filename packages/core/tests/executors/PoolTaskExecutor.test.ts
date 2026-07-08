@@ -74,7 +74,7 @@ describe("PoolTaskExecutor", () => {
 	});
 
 	test("should cancel all workers", async () => {
-		const executor = new PoolTaskExecutor(2);
+		const executor = new PoolTaskExecutor(1);
 
 		const task1 = executor.exec(async (token) => {
 			await token.sleep(1000);
@@ -86,11 +86,13 @@ describe("PoolTaskExecutor", () => {
 			return 2;
 		});
 
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
 		executor.cancel();
 
 		await expect(task1).rejects.toBeInstanceOf(CancelError);
 		await expect(task2).rejects.toBeInstanceOf(CancelError);
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("should report cancellation status", () => {
@@ -98,6 +100,9 @@ describe("PoolTaskExecutor", () => {
 		expect(executor.isCancelled()).toBe(false);
 
 		executor.cancel();
+		expect(executor.isCancelled()).toBe(false);
+
+		executor.shutdown();
 		expect(executor.isCancelled()).toBe(true);
 	});
 
@@ -155,9 +160,8 @@ describe("PoolTaskExecutor", () => {
 
 		executor.cancel({ kind: "missing" });
 
-		expect(executor.isCancelled()).toBe(true);
-		expect(() =>
-			executor.exec(async () => "will not run", { kind: "alpha" }),
-		).toThrow(CancelError);
+		expect(executor.isCancelled()).toBe(false);
+		const handle = executor.exec(async () => "will run", { kind: "alpha" });
+		return expect(handle).resolves.toBe("will run");
 	});
 });

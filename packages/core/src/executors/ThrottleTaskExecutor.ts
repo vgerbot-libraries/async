@@ -1,6 +1,7 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
 import { ITaskExecutor, TaskCancelOptions, TaskOptions } from "./ITaskExecutor";
+import { TaskHandle } from "./TaskHandle";
 
 export interface ThrottleOptions {
 	leading?: boolean;
@@ -27,8 +28,12 @@ export class ThrottleTaskExecutor implements ITaskExecutor {
 		});
 	}
 
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T> {
 		return this.executor.exec(task, options);
+	}
+
+	shutdown(reason?: unknown): void {
+		this.executor.shutdown(reason);
 	}
 
 	cancel(reason?: unknown): void;

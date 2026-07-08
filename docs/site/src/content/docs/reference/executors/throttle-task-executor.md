@@ -56,8 +56,9 @@ executor.exec(async () => saveData("c")); // Replaces "b"
 class ThrottleTaskExecutor extends BaseTaskExecutor {
   constructor(wait: number, options?: ThrottleOptions);
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 
   flush(): void;
@@ -135,7 +136,7 @@ If a task throws, the task's promise rejects with that error. The executor remai
 
 ### Executor-level cancellation
 
-Calling `cancel()` permanently disables the executor. The pending task is cleared.
+Calling `cancel()` cancels pending/running tasks. Use `shutdown()` to permanently disable the executor.
 
 ```ts
 executor.exec(async () => saveData());
@@ -146,7 +147,7 @@ executor.cancel("Component unmounted");
 
 ```ts
 executor.flush();
-executor.cancel();
+executor.shutdown();
 ```
 
 ## TypeScript tips
@@ -157,7 +158,7 @@ executor.cancel();
 const result = await executor.exec(async (token) => {
   const res = await token.wrap(fetch("/api/track"));
   return res.json() as Promise<{ ok: boolean }>;
-}).promise;
+});
 ```
 
 ## Related APIs

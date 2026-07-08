@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import { CancelError } from "../../src/cancellable/CancelError";
 import {
 	CircuitBreakerExecutor,
 	DebounceTaskExecutor,
@@ -7,91 +6,105 @@ import {
 	PriorityPoolExecutor,
 	RateLimitExecutor,
 } from "../../src/executors";
+import { ExecutorShutdownError } from "../../src/executors/ExecutorShutdownError";
 
-describe("BaseTaskExecutor - Permanent Cancellation", () => {
-	test("CircuitBreakerExecutor - permanent cancellation", async () => {
+describe("BaseTaskExecutor - Permanent Shutdown", () => {
+	test("CircuitBreakerExecutor - permanent shutdown", async () => {
 		const executor = new CircuitBreakerExecutor({
 			failureThreshold: 3,
 			resetTimeout: 1000,
 		});
 
-		executor.cancel("test reason");
+		executor.shutdown("test reason");
 		expect(executor.isCancelled()).toBe(true);
 
 		// First call should fail
-		await expect(executor.exec(async () => "test1")).rejects.toThrow(
-			CancelError,
+		expect(() => executor.exec(async () => "test1")).toThrow(
+			ExecutorShutdownError,
 		);
 
 		// Subsequent calls should also fail
-		await expect(executor.exec(async () => "test2")).rejects.toThrow(
-			CancelError,
+		expect(() => executor.exec(async () => "test2")).toThrow(
+			ExecutorShutdownError,
 		);
 	});
 
-	test("RateLimitExecutor - permanent cancellation", async () => {
+	test("RateLimitExecutor - permanent shutdown", () => {
 		const executor = new RateLimitExecutor(10, 1000);
 
-		executor.cancel("test reason");
+		executor.shutdown("test reason");
 		expect(executor.isCancelled()).toBe(true);
 
-		await expect(executor.exec(async () => "test1")).rejects.toThrow(
-			CancelError,
+		expect(() => executor.exec(async () => "test1")).toThrow(
+			ExecutorShutdownError,
 		);
-		await expect(executor.exec(async () => "test2")).rejects.toThrow(
-			CancelError,
+		expect(() => executor.exec(async () => "test2")).toThrow(
+			ExecutorShutdownError,
 		);
 	});
 
-	test("DebounceTaskExecutor - permanent cancellation", async () => {
+	test("DebounceTaskExecutor - permanent shutdown", () => {
 		const executor = new DebounceTaskExecutor(100);
 
-		executor.cancel("test reason");
+		executor.shutdown("test reason");
 		expect(executor.isCancelled()).toBe(true);
 
-		expect(() => executor.exec(async () => "test1")).toThrow(CancelError);
-		expect(() => executor.exec(async () => "test2")).toThrow(CancelError);
-	});
-
-	test("PoolTaskExecutor - permanent cancellation", async () => {
-		const executor = new PoolTaskExecutor(2);
-
-		executor.cancel("test reason");
-		expect(executor.isCancelled()).toBe(true);
-
-		// Pool executors throw synchronously when cancelled
-		expect(() => executor.exec(async () => "test1")).toThrow(CancelError);
-		expect(() => executor.exec(async () => "test2")).toThrow(CancelError);
-	});
-
-	test("PriorityPoolExecutor - permanent cancellation", async () => {
-		const executor = new PriorityPoolExecutor(2);
-
-		executor.cancel("test reason");
-		expect(executor.isCancelled()).toBe(true);
-
-		// Priority pool executors throw synchronously when cancelled
-		expect(() => executor.exec(async () => "test1")).toThrow(CancelError);
-		expect(() => executor.exec(async () => "test2", { priority: 10 })).toThrow(
-			CancelError,
+		expect(() => executor.exec(async () => "test1")).toThrow(
+			ExecutorShutdownError,
+		);
+		expect(() => executor.exec(async () => "test2")).toThrow(
+			ExecutorShutdownError,
 		);
 	});
 
-	test("cancellation reason is preserved", async () => {
+	test("PoolTaskExecutor - permanent shutdown", () => {
+		const executor = new PoolTaskExecutor(2);
+
+		executor.shutdown("test reason");
+		expect(executor.isCancelled()).toBe(true);
+
+		// Pool executors throw synchronously when shut down
+		expect(() => executor.exec(async () => "test1")).toThrow(
+			ExecutorShutdownError,
+		);
+		expect(() => executor.exec(async () => "test2")).toThrow(
+			ExecutorShutdownError,
+		);
+	});
+
+	test("PriorityPoolExecutor - permanent shutdown", () => {
+		const executor = new PriorityPoolExecutor(2);
+
+		executor.shutdown("test reason");
+		expect(executor.isCancelled()).toBe(true);
+
+		// Priority pool executors throw synchronously when shut down
+		expect(() => executor.exec(async () => "test1")).toThrow(
+			ExecutorShutdownError,
+		);
+		expect(() => executor.exec(async () => "test2", { priority: 10 })).toThrow(
+			ExecutorShutdownError,
+		);
+	});
+
+	test("shutdown reason is preserved", () => {
 		const executor = new CircuitBreakerExecutor({
 			failureThreshold: 3,
 			resetTimeout: 1000,
 		});
 
-		const reason = { code: "USER_CANCELLED", message: "User requested stop" };
-		executor.cancel(reason);
+		const reason = { code: "USER_SHUTDOWN", message: "User requested stop" };
+		executor.shutdown(reason);
 
+		expect(() => executor.exec(async () => "test")).toThrow(
+			ExecutorShutdownError,
+		);
 		try {
-			await executor.exec(async () => "test");
+			executor.exec(async () => "test");
 			expect.fail("Should have thrown");
 		} catch (error) {
-			expect(error).toBeInstanceOf(CancelError);
-			expect((error as CancelError).reason).toBe(reason);
+			expect(error).toBeInstanceOf(ExecutorShutdownError);
+			expect((error as ExecutorShutdownError).reason).toBe(reason);
 		}
 	});
 });

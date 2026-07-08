@@ -5,6 +5,8 @@ description: The handle returned to the caller of a cancellable task.
 
 `CancellableHandle` is the object returned by `cancellable` and all APIs built on top of it. It represents the external interface to a cancellable operation — the caller uses it to await, cancel, and inspect the task.
 
+For executor APIs, `exec()` returns `TaskHandle<T>`, which extends `CancellableHandle<T>` with the same await/cancel behavior.
+
 > **External interface**
 > `CancellableHandle` is what the caller holds. The task itself receives a `CancellableToken`.
 

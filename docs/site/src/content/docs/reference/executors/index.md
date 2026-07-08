@@ -23,7 +23,8 @@ interface ITaskExecutor {
   cancel(options: TaskCancelOptions): void;
   cancel(reason: unknown, options: TaskCancelOptions): void;
   isCancelled(): boolean;
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  shutdown(reason?: unknown): void;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
 }
 ```
 

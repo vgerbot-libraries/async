@@ -56,8 +56,9 @@ executor.exec(async () => saveDraft("version 3"));
 class DebounceTaskExecutor extends BaseTaskExecutor {
   constructor(wait: number, options?: DebounceOptions);
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 
   flush(): void;
@@ -138,7 +139,7 @@ If a task throws, the task's promise rejects with that error. The executor remai
 
 ### Executor-level cancellation
 
-Calling `cancel()` permanently disables the executor. The pending task timer is cleared, and the pending task is rejected.
+Calling `cancel()` cancels current/pending tasks. The pending task timer is cleared, and the pending task is rejected.
 
 ```ts
 executor.exec(async () => saveData());
@@ -150,7 +151,7 @@ executor.cancel("Component unmounted");
 ```ts
 // Execute any pending task before shutting down
 executor.flush();
-executor.cancel();
+executor.shutdown();
 ```
 
 ## TypeScript tips
@@ -160,7 +161,7 @@ executor.cancel();
 ```ts
 const result = await executor.exec(async (token) => {
   return fetch("/api/search").then((r) => r.json()) as Promise<SearchResult>;
-}).promise;
+});
 ```
 
 ## Related APIs

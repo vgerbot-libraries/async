@@ -1,8 +1,6 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { CancelError } from "../cancellable/CancelError";
-import { CancellableHandle } from "../cancellable/CancellableHandle";
-import { cancellable } from "../cancellable/cancellable";
-import { Defer } from "../utils/Defer";
+import { CancellableToken } from "../cancellable/CancellableToken";
 import { BaseTaskExecutor } from "./BaseTaskExecutor";
 import {
 	matchesCancelRequest,
@@ -11,6 +9,7 @@ import {
 	resolveTaskOptions,
 	TaskOptions,
 } from "./ITaskExecutor";
+import { TaskHandle } from "./TaskHandle";
 
 /**
  * Task options for `PriorityPoolExecutor`.
@@ -23,7 +22,7 @@ export interface PriorityTaskOptions extends TaskOptions {
 
 interface PriorityQueuedTask {
 	task: AsyncTask<unknown>;
-	defer: Defer<unknown>;
+	handle: TaskHandle<unknown>;
 	priority: number;
 	options?: ResolvedTaskOptions;
 }
@@ -125,53 +124,56 @@ class PriorityQueue<T extends { priority: number }> {
  */
 export class PriorityPoolExecutor extends BaseTaskExecutor {
 	private readonly pending = new PriorityQueue<PriorityQueuedTask>();
-	private readonly workers: CancellableHandle<void>[];
+	private readonly running = new Map<
+		TaskHandle<unknown>,
+		{ options?: ResolvedTaskOptions }
+	>();
 
 	constructor(concurrency: number) {
 		super();
-		this.workers = Array.from({ length: concurrency }, () =>
-			cancellable(async (token) => {
-				while (!this.isCancelled()) {
-					const item = await this.dequeue();
-					if (item) {
-						try {
-							const result = await item.task(token);
-							item.defer.resolve(result);
-						} catch (e) {
-							item.defer.reject(e);
-							if (e instanceof CancelError) {
-								throw e;
-							}
-						}
-					}
-					token.throwIfCancelled();
-				}
-			}),
-		);
+		Array.from({ length: concurrency }, () => this.runWorker());
 	}
 
-	exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): Promise<T> {
-		this.checkCancelled("Priority pool executor permanently cancelled");
+	exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): TaskHandle<T> {
+		this.checkShutdown("Priority pool executor permanently shut down");
 
-		const defer = new Defer<T>();
+		const resolvedOptions = resolveTaskOptions(options);
+		const handle = new TaskHandle<T>(
+			new AbortController(),
+			resolvedOptions.name ?? resolvedOptions.kind,
+		);
+		handle.signal.addEventListener(
+			"abort",
+			() => {
+				handle.reject(
+					CancelError.fromReason("Task cancelled", handle.signal.reason),
+				);
+			},
+			{ once: true },
+		);
+
 		this.pending.enqueue({
 			task: task as AsyncTask<unknown>,
-			defer: defer as Defer<unknown>,
+			handle: handle as TaskHandle<unknown>,
 			priority: options?.priority ?? 0,
-			options: resolveTaskOptions(options),
+			options: resolvedOptions,
 		});
 
-		return defer.promise;
+		return handle;
 	}
 
-	protected onCancel(reason?: unknown): void {
-		for (const handle of this.workers) {
-			handle.cancel(reason);
-		}
+	protected onCancelAll(reason?: unknown): void {
+		const error = CancelError.fromReason(
+			"Priority pool executor cancelled",
+			reason,
+		);
 		for (const item of this.pending.clear()) {
-			item.defer.reject(
-				CancelError.fromReason("Priority pool executor cancelled", reason),
-			);
+			item.handle.reject(error);
+		}
+
+		for (const [handle] of this.running) {
+			handle.cancel(error);
+			handle.reject(error);
 		}
 	}
 
@@ -186,7 +188,8 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 		) {
 			if (matchesCancelRequest(item.options, request)) {
 				cancelled++;
-				item.defer.reject(
+				item.handle.cancel(request.reason);
+				item.handle.reject(
 					CancelError.fromReason("Task cancelled", request.reason),
 				);
 				continue;
@@ -198,13 +201,25 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 			this.pending.enqueue(item);
 		}
 
+		for (const [handle, running] of this.running) {
+			if (matchesCancelRequest(running.options, request)) {
+				cancelled++;
+				handle.cancel(request.reason);
+				handle.reject(CancelError.fromReason("Task cancelled", request.reason));
+			}
+		}
+
 		if (cancelled === 0) {
 			super.cancelFiltered(request);
 		}
 	}
 
+	protected onShutdown(reason?: unknown): void {
+		this.onCancelAll(reason);
+	}
+
 	private async dequeue(): Promise<PriorityQueuedTask | undefined> {
-		while (!this.isCancelled()) {
+		while (!this.isShutdown()) {
 			const item = this.pending.dequeue();
 			if (item) {
 				return item;
@@ -212,5 +227,29 @@ export class PriorityPoolExecutor extends BaseTaskExecutor {
 			await new Promise((resolve) => setTimeout(resolve, 10));
 		}
 		return undefined;
+	}
+
+	private async runWorker(): Promise<void> {
+		while (!this.isShutdown()) {
+			const item = await this.dequeue();
+			if (!item || item.handle.isSettled) {
+				continue;
+			}
+
+			const token = new CancellableToken(
+				item.handle.signal,
+				item.options?.name ?? item.options?.kind,
+			);
+			this.running.set(item.handle, { options: item.options });
+
+			try {
+				const result = await item.task(token);
+				item.handle.resolve(result);
+			} catch (e) {
+				item.handle.reject(e);
+			} finally {
+				this.running.delete(item.handle);
+			}
+		}
 	}
 }

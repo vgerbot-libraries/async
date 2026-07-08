@@ -61,9 +61,10 @@ for (let i = 0; i < 20; i++) {
 class RateLimitExecutor extends BaseTaskExecutor {
   constructor(options: RateLimitOptions);
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
   cancel(options: TaskCancelOptions): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 }
 ```
@@ -94,7 +95,7 @@ Submits a task for execution. If the rate limit has been reached, the task is qu
 
 #### `cancel(reason?)` / `cancel(options)`
 
-Permanently cancels the executor. All pending and queued tasks are rejected.
+Cancels matching tasks. Use `shutdown()` to permanently disable the executor.
 
 ## Execution model
 
@@ -126,7 +127,7 @@ If a task throws, the task's promise rejects with that error. The executor conti
 
 ### Executor-level cancellation
 
-Calling `cancel()` permanently disables the executor. All pending and queued tasks are rejected with `CancelError`.
+Calling `cancel()` cancels pending/running tasks. Use `shutdown()` to permanently disable the executor.
 
 ```ts
 const executor = new RateLimitExecutor({ maxRequests: 10, windowMs: 1000 });
@@ -154,7 +155,7 @@ executor.cancel({ kind: "batch" });
 const result = await executor.exec(async (token) => {
   const res = await token.wrap(fetch("/api/data"));
   return res.json() as Promise<{ items: string[] }>;
-}).promise;
+});
 ```
 
 ## Related APIs

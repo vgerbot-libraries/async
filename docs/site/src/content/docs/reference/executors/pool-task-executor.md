@@ -61,11 +61,12 @@ console.log(result);
 ```ts
 class PoolTaskExecutor extends BaseTaskExecutor {
   constructor(concurrency: number);
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
   cancel(options: TaskCancelOptions): void;
   cancel(reason: unknown, options: TaskCancelOptions): void;
   isCancelled(): boolean;
+  shutdown(reason?: unknown): void;
 }
 ```
 
@@ -81,7 +82,7 @@ new PoolTaskExecutor(concurrency: number)
 
 ### `exec(task, options)`
 
-Submits a task to the pool and returns a promise for that task result.
+Submits a task to the pool and returns a task handle for that task result.
 
 ```ts
 type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
@@ -102,18 +103,18 @@ type AsyncTask<T> = (token: CancellableToken) => Promise<T>;
 
 ### Return value
 
-`exec()` returns `Promise<T>`. The promise resolves with the submitted task result or rejects with the task error.
+`exec()` returns `TaskHandle<T>`. It is awaitable and also provides `cancel()` for per-task cancellation.
 
 ## Execution model
 
 `PoolTaskExecutor` creates worker loops when constructed.
 
-1. `exec()` checks permanent executor cancellation.
+1. `exec()` checks permanent executor shutdown.
 2. The task is queued with its resolved task options.
 3. The next available worker dequeues the task.
 4. The worker calls the task with a `CancellableToken`.
 5. The `exec()` promise resolves or rejects with the task outcome.
-6. The worker continues to the next queued task until the executor is cancelled.
+6. The worker continues to the next queued task until the executor is shut down.
 
 ```ts
 const pool = new PoolTaskExecutor(1);
@@ -146,7 +147,7 @@ console.log(ok);
 
 ## Cancellation
 
-Calling `cancel(reason)` permanently cancels the executor. Future `exec()` calls throw `CancelError`; queued pending tasks reject; worker handles are cancelled.
+Calling `cancel(reason)` cancels matching tasks but does not permanently disable the executor.
 
 ```ts
 const pool = new PoolTaskExecutor(2);
@@ -160,6 +161,8 @@ pool.cancel("App shutdown");
 await slow;
 ```
 
+Use `shutdown(reason)` to permanently close the executor. After shutdown, `exec()` throws `ExecutorShutdownError`.
+
 Selective cancellation removes matching pending tasks by `kind` without permanently disabling the executor when matches are found.
 
 ```ts
@@ -171,7 +174,7 @@ pool.exec(loadPosts, { kind: "posts" });
 pool.cancel({ kind: "posts", reason: "Posts refreshed" });
 ```
 
-If no pending task matches a selective cancellation request, the default executor behavior upgrades the request to a full cancellation.
+If no task matches a selective cancellation request, the executor remains usable.
 
 ## TypeScript tips
 

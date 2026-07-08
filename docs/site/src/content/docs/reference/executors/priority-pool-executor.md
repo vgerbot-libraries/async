@@ -64,9 +64,10 @@ executor.cancel({ kind: "batch" });
 class PriorityPoolExecutor extends BaseTaskExecutor {
   constructor(concurrency: number);
 
-  exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: PriorityTaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
   cancel(options: TaskCancelOptions): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 }
 ```
@@ -102,7 +103,7 @@ Submits a task with optional priority. Higher `priority` values are processed fi
 
 #### `cancel(reason?)` / `cancel(options)`
 
-Permanently cancels the executor, or selectively cancels tasks by kind.
+Cancels matching tasks, or selectively cancels tasks by kind.
 
 ## Execution model
 
@@ -126,7 +127,7 @@ If a task throws, the task's promise rejects with that error. The executor conti
 
 ### Executor-level cancellation
 
-Calling `cancel()` permanently disables the executor. All pending tasks are rejected, and running tasks are cancelled.
+Calling `cancel()` cancels matching tasks. To permanently disable the executor, call `shutdown()`.
 
 ### Selective cancellation by kind
 

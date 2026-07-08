@@ -187,15 +187,12 @@ describe("CircuitBreakerExecutor", () => {
 
 		executor.cancel();
 
+		expect(executor.isCancelled()).toBe(false);
+
+		await expect(executor.exec(async () => "test")).resolves.toBe("test");
+
+		executor.shutdown();
 		expect(executor.isCancelled()).toBe(true);
-
-		await expect(executor.exec(async () => "test")).rejects.toThrow(
-			"Circuit breaker executor permanently cancelled",
-		);
-
-		// Subsequent calls should also fail
-		await expect(executor.exec(async () => "test2")).rejects.toThrow(
-			"Circuit breaker executor permanently cancelled",
-		);
+		expect(() => executor.exec(async () => "test2")).toThrow();
 	});
 });

@@ -104,7 +104,7 @@ describe("DebounceTaskExecutor", () => {
 		executor.cancel();
 
 		await expect(promise).rejects.toBeInstanceOf(CancelError);
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("should flush pending task immediately", async () => {

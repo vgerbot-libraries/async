@@ -38,11 +38,11 @@ const executor = new SeriesTaskExecutor();
 const result1 = await executor.exec(async (token) => {
   await token.sleep(100);
   return "first";
-}).promise;
+});
 
 const result2 = await executor.exec(async (token) => {
   return "second";
-}).promise;
+});
 
 // "first" completes before "second" starts
 ```
@@ -60,9 +60,10 @@ const result2 = await executor.exec(async (token) => {
 class SeriesTaskExecutor implements ITaskExecutor {
   constructor();
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
   cancel(options: TaskCancelOptions): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 }
 ```
@@ -86,11 +87,11 @@ Submits a task for execution. The task starts only after all previously submitte
 | `task` | `AsyncTask<T>` | — | Async function that receives a `CancellableToken`. |
 | `options` | `TaskOptions` | `undefined` | Task metadata (kind, name, metadata). |
 
-Returns a `PromiseLike<T>` that resolves when the task completes.
+Returns a `TaskHandle<T>` that resolves when the task completes.
 
 #### `cancel(reason?)` / `cancel(options)`
 
-Permanently cancels the executor. All pending tasks are rejected with `CancelError`. Running tasks receive a cancellation signal.
+Cancels matching tasks. Use `shutdown()` to permanently close the executor.
 
 ```ts
 executor.cancel("Shutting down");
@@ -104,7 +105,7 @@ executor.cancel({ kind: "low-priority" });
 
 #### `isCancelled()`
 
-Returns `true` if the executor has been permanently cancelled.
+Returns `true` if the executor has been permanently shut down.
 
 ## Execution model
 
@@ -124,14 +125,14 @@ try {
 }
 
 // Next task still runs
-const result = await executor.exec(async () => "ok").promise;
+const result = await executor.exec(async () => "ok");
 ```
 
 ## Cancellation
 
 ### Executor-level cancellation
 
-Calling `cancel()` permanently disables the executor. All pending tasks are rejected, and running tasks are cancelled.
+Calling `cancel()` cancels matching tasks. To permanently disable the executor, call `shutdown()`.
 
 ```ts
 const executor = new SeriesTaskExecutor();
@@ -162,7 +163,7 @@ executor.cancel({ kind: "background" });
 const result = await executor.exec(async (token) => {
   const res = await token.wrap(fetch("/api/data"));
   return res.json() as Promise<{ id: number }>;
-}).promise; // { id: number }
+}); // { id: number }
 ```
 
 ## Related APIs

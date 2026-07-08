@@ -9,6 +9,7 @@ import {
 	resolveTaskOptions,
 	TaskOptions,
 } from "./ITaskExecutor";
+import { TaskHandle } from "./TaskHandle";
 
 /**
  * Circuit breaker states.
@@ -63,8 +64,10 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 	private failureCount = 0;
 	private successCount = 0;
 	private nextAttempt = 0;
-	private currentAbortController: AbortController | undefined;
-	private currentOptions: ResolvedTaskOptions | undefined;
+	private readonly running = new Map<
+		TaskHandle<unknown>,
+		{ options?: ResolvedTaskOptions }
+	>();
 
 	private readonly failureThreshold: number;
 	private readonly resetTimeout: number;
@@ -77,9 +80,23 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 		this.halfOpenRequests = options.halfOpenRequests ?? 1;
 	}
 
-	async exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
-		// Check permanent cancellation state first
-		this.checkCancelled("Circuit breaker executor permanently cancelled");
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T> {
+		this.checkShutdown("Circuit breaker executor permanently shut down");
+
+		const resolvedOptions = resolveTaskOptions(options);
+		const handle = new TaskHandle<T>(
+			new AbortController(),
+			resolvedOptions.name ?? resolvedOptions.kind,
+		);
+		handle.signal.addEventListener(
+			"abort",
+			() => {
+				handle.reject(
+					CancelError.fromReason("Task cancelled", handle.signal.reason),
+				);
+			},
+			{ once: true },
+		);
 
 		// Check if we should transition from OPEN to HALF_OPEN
 		if (this.state === "OPEN" && Date.now() >= this.nextAttempt) {
@@ -89,54 +106,50 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 
 		// Fail fast if circuit is open
 		if (this.state === "OPEN") {
-			throw new Error(
-				`Circuit breaker is OPEN. Next attempt at ${new Date(this.nextAttempt).toISOString()}`,
+			handle.reject(
+				new Error(
+					`Circuit breaker is OPEN. Next attempt at ${new Date(this.nextAttempt).toISOString()}`,
+				),
 			);
+			return handle;
 		}
 
-		// Create a new AbortController for this specific task execution
-		const abortController = new AbortController();
-		this.currentAbortController = abortController;
-		this.currentOptions = resolveTaskOptions(options);
-		const token = new CancellableToken(
-			abortController.signal,
-			this.currentOptions.name ?? this.currentOptions.kind,
+		void this.runTask(
+			task as AsyncTask<unknown>,
+			handle as TaskHandle<unknown>,
+			resolvedOptions,
 		);
 
-		try {
-			const result = await task(token);
-			this.onSuccess();
-			return result;
-		} catch (error) {
-			this.onFailure();
-			throw error;
-		} finally {
-			// Clear reference if this is still the current controller
-			if (this.currentAbortController === abortController) {
-				this.currentAbortController = undefined;
-				this.currentOptions = undefined;
-			}
-		}
+		return handle;
 	}
 
 	/**
-	 * Hook called when executor is cancelled.
+	 * Hook called when executor tasks are cancelled.
 	 * Aborts the currently executing task if any.
 	 */
-	protected onCancel(reason?: unknown): void {
-		this.currentAbortController?.abort(reason);
+	protected onCancelAll(reason?: unknown): void {
+		const error = CancelError.fromReason(
+			"Circuit breaker executor cancelled",
+			reason,
+		);
+		for (const [handle] of this.running) {
+			handle.cancel(error);
+			handle.reject(error);
+		}
 	}
 
 	protected cancelFiltered(request: NormalizedTaskCancelRequest): void {
-		if (
-			this.currentAbortController &&
-			matchesCancelRequest(this.currentOptions, request)
-		) {
-			this.currentAbortController.abort(
-				CancelError.fromReason("Task cancelled", request.reason),
-			);
-			this.currentAbortController = undefined;
-			this.currentOptions = undefined;
+		let cancelled = 0;
+
+		for (const [handle, running] of this.running) {
+			if (matchesCancelRequest(running.options, request)) {
+				cancelled++;
+				handle.cancel(request.reason);
+				handle.reject(CancelError.fromReason("Task cancelled", request.reason));
+			}
+		}
+
+		if (cancelled > 0) {
 			return;
 		}
 
@@ -184,6 +197,29 @@ export class CircuitBreakerExecutor extends BaseTaskExecutor {
 			// Too many failures in CLOSED state
 			this.state = "OPEN";
 			this.nextAttempt = Date.now() + this.resetTimeout;
+		}
+	}
+
+	private async runTask(
+		task: AsyncTask<unknown>,
+		handle: TaskHandle<unknown>,
+		options: ResolvedTaskOptions,
+	): Promise<void> {
+		const token = new CancellableToken(
+			handle.signal,
+			options.name ?? options.kind,
+		);
+		this.running.set(handle, { options });
+
+		try {
+			const result = await task(token);
+			this.onSuccess();
+			handle.resolve(result);
+		} catch (error) {
+			this.onFailure();
+			handle.reject(error);
+		} finally {
+			this.running.delete(handle);
 		}
 	}
 }

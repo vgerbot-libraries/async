@@ -1,5 +1,5 @@
-import { noop } from "../utils";
 import { Defer } from "../utils/Defer";
+import { noop } from "../utils/noop";
 import { CancelError } from "./CancelError";
 import { CANCEL_REASON } from "./internal";
 

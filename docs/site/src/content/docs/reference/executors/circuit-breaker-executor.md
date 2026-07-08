@@ -43,7 +43,7 @@ for (let i = 0; i < 10; i++) {
   try {
     const result = await breaker.exec(async (token) => {
       return fetch("/api/unstable-service");
-    }).promise;
+    });
   } catch (error) {
     console.log(`Request ${i} failed:`, error.message);
   }
@@ -67,8 +67,9 @@ type CircuitState = "closed" | "open" | "half_open";
 class CircuitBreakerExecutor extends BaseTaskExecutor {
   constructor(options: CircuitBreakerOptions);
 
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
   cancel(reason?: unknown): void;
+  shutdown(reason?: unknown): void;
   isCancelled(): boolean;
 
   getState(): CircuitState;
@@ -153,7 +154,7 @@ console.log(breaker.getState()); // "closed"
 
 ## Cancellation
 
-Calling `cancel()` permanently disables the executor. All pending tasks are rejected.
+Calling `cancel()` cancels current/pending tasks. To permanently disable the executor, call `shutdown()`.
 
 ## TypeScript tips
 
@@ -163,7 +164,7 @@ Calling `cancel()` permanently disables the executor. All pending tasks are reje
 const result = await breaker.exec(async (token) => {
   const res = await token.wrap(fetch("/api/data"));
   return res.json() as Promise<{ status: string }>;
-}).promise;
+});
 ```
 
 ## Related APIs

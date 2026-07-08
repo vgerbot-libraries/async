@@ -1,6 +1,7 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
 import { ITaskExecutor, TaskCancelOptions, TaskOptions } from "./ITaskExecutor";
 import { PoolTaskExecutor } from "./PoolTaskExecutor";
+import { TaskHandle } from "./TaskHandle";
 
 /**
  * A task executor that runs tasks in series (sequentially), one after another.
@@ -10,8 +11,12 @@ import { PoolTaskExecutor } from "./PoolTaskExecutor";
 export class SeriesTaskExecutor implements ITaskExecutor {
 	private readonly pool = new PoolTaskExecutor(1);
 
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): Promise<T> {
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T> {
 		return this.pool.exec(task, options);
+	}
+
+	shutdown(reason?: unknown): void {
+		this.pool.shutdown(reason);
 	}
 
 	cancel(reason?: unknown): void;

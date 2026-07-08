@@ -101,7 +101,7 @@ describe("ThrottleTaskExecutor", () => {
 
 		executor.cancel();
 
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("should flush pending task immediately", async () => {

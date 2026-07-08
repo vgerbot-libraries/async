@@ -52,7 +52,8 @@ interface ITaskExecutor {
   cancel(options: TaskCancelOptions): void;
   cancel(reason: unknown, options: TaskCancelOptions): void;
   isCancelled(): boolean;
-  exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+  shutdown(reason?: unknown): void;
+  exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
 }
 ```
 
@@ -67,11 +68,11 @@ Submits a task for execution. The scheduling behavior depends on the executor im
 | `task` | `AsyncTask<T>` | — | Async function that receives a `CancellableToken`. |
 | `options` | `TaskOptions` | `undefined` | Task metadata. |
 
-Returns a `PromiseLike<T>` that resolves when the task completes.
+Returns a `TaskHandle<T>`, which is awaitable and also exposes `cancel()` and cancellation state.
 
 #### `cancel(reason?)` / `cancel(options)` / `cancel(reason, options)`
 
-Cancels the executor. Supports three overloads:
+Cancels tasks. Supports three overloads:
 
 - `cancel()` — cancel all tasks with no reason.
 - `cancel(reason)` — cancel all tasks with a reason.
@@ -80,7 +81,11 @@ Cancels the executor. Supports three overloads:
 
 #### `isCancelled()`
 
-Returns `true` if the executor has been permanently cancelled.
+Returns `true` if the executor has been permanently shut down.
+
+#### `shutdown(reason?)`
+
+Permanently shuts down the executor. After shutdown, all new `exec()` calls throw `ExecutorShutdownError`.
 
 ## Related types
 
@@ -149,7 +154,7 @@ executor.cancel({ kind: ["background", "low-priority"] });
 Use `ITaskExecutor` as a type constraint when writing functions that accept any executor:
 
 ```ts
-function withExecutor<T>(executor: ITaskExecutor, task: AsyncTask<T>): PromiseLike<T> {
+function withExecutor<T>(executor: ITaskExecutor, task: AsyncTask<T>): TaskHandle<T> {
   return executor.exec(task);
 }
 ```

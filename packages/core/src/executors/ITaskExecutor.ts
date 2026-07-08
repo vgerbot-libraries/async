@@ -1,4 +1,5 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
+import { TaskHandle } from "./TaskHandle";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null;
@@ -137,9 +138,10 @@ export const matchesCancelRequest = (
  * Provides a consistent API for submitting, cancelling, and querying tasks.
  */
 export interface ITaskExecutor {
+	shutdown(reason?: unknown): void;
 	cancel(reason?: unknown): void;
 	cancel(options: TaskCancelOptions): void;
 	cancel(reason: unknown, options: TaskCancelOptions): void;
 	isCancelled(): boolean;
-	exec<T>(task: AsyncTask<T>, options?: TaskOptions): PromiseLike<T>;
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T>;
 }

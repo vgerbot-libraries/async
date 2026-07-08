@@ -111,7 +111,7 @@ describe("PriorityPoolExecutor", () => {
 
 		await expect(p2).rejects.toThrow();
 		await expect(p3).rejects.toThrow();
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("handles errors without stopping", async () => {

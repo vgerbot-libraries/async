@@ -56,7 +56,7 @@ describe("RateLimitExecutor", () => {
 		executor.cancel();
 
 		await expect(promise).rejects.toThrow();
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("sliding window resets over time", async () => {
