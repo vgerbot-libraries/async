@@ -13,6 +13,6 @@
         "@astrojs/starlight": "0.39.3",
         "@vgerbot/async": "workspace:*",
         "astro": "^6.0.0",
-        "sharp": "0.34.5"
+        "sharp": "0.35.3"
     }
 }
