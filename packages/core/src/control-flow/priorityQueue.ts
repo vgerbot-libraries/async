@@ -1,7 +1,7 @@
 import { CancelError } from "../cancellable/CancelError";
 import { CancellableToken } from "../cancellable/CancellableToken";
 import { Defer } from "../utils/Defer";
-import { QueueOptions, QueueWorker, TaskQueue } from "./queue";
+import { QueueOptions, QueueTaskError, QueueWorker, TaskQueue } from "./queue";
 
 /**
  * Priority task queue interface extending the base TaskQueue.
@@ -31,9 +31,18 @@ interface PriorityEnqueuedTask<T, R> {
 	priority: number;
 }
 
+interface SizeLessThanWaiter {
+	size: number;
+	defer: Defer<void>;
+}
+
 class DefaultPriorityTaskQueue<T, R> implements PriorityTaskQueue<T, R> {
 	private readonly pending: PriorityEnqueuedTask<T, R>[] = [];
 	private readonly idleWaiters: Defer<void>[] = [];
+	private readonly emptyWaiters: Defer<void>[] = [];
+	private readonly saturatedWaiters: Defer<void>[] = [];
+	private readonly errorWaiters: Defer<QueueTaskError<T>>[] = [];
+	private readonly sizeLessThanWaiters: SizeLessThanWaiter[] = [];
 	private readonly abortController: AbortController;
 	private active = 0;
 	private isPaused: boolean;
@@ -59,7 +68,7 @@ class DefaultPriorityTaskQueue<T, R> implements PriorityTaskQueue<T, R> {
 				CancelError.fromReason(
 					"Queue cancelled",
 					this.abortController.signal.reason,
-				).withRejectionSite(),
+				),
 			);
 		}
 		const defer = new Defer<R>();
@@ -95,17 +104,56 @@ class DefaultPriorityTaskQueue<T, R> implements PriorityTaskQueue<T, R> {
 		return defer.promise;
 	}
 
+	onError(): Promise<QueueTaskError<T>> {
+		const defer = new Defer<QueueTaskError<T>>();
+		this.errorWaiters.push(defer);
+		return defer.promise;
+	}
+
+	onEmpty(): Promise<void> {
+		if (this.length === 0) {
+			return Promise.resolve();
+		}
+		const defer = new Defer<void>();
+		this.emptyWaiters.push(defer);
+		return defer.promise;
+	}
+
+	onSaturated(): Promise<void> {
+		if (this.running >= this.concurrency) {
+			return Promise.resolve();
+		}
+		const defer = new Defer<void>();
+		this.saturatedWaiters.push(defer);
+		return defer.promise;
+	}
+
+	onSizeLessThan(size: number): Promise<void> {
+		const threshold = Math.floor(size);
+		if (!Number.isFinite(threshold) || threshold <= 0) {
+			throw new RangeError("size must be a positive finite number");
+		}
+		if (this.length < threshold) {
+			return Promise.resolve();
+		}
+		const defer = new Defer<void>();
+		this.sizeLessThanWaiters.push({ size: threshold, defer });
+		return defer.promise;
+	}
+
 	cancel(reason?: unknown) {
 		if (this.isCancelled()) {
 			return;
 		}
 		this.abortController.abort(reason);
-		const error = CancelError.fromReason(
-			"Queue cancelled",
-			reason,
-		).withRejectionSite();
+		const hadPending = this.pending.length > 0;
+		const error = CancelError.fromReason("Queue cancelled", reason);
 		for (const item of this.pending.splice(0)) {
 			item.defer.reject(error);
+		}
+		if (hadPending) {
+			this.resolveEmptyWaiters();
+			this.resolveSizeLessThanWaiters();
 		}
 		this.resolveIdleWaiters();
 	}
@@ -137,13 +185,24 @@ class DefaultPriorityTaskQueue<T, R> implements PriorityTaskQueue<T, R> {
 			this.active < this.concurrency &&
 			this.pending.length > 0
 		) {
+			const previousLength = this.pending.length;
 			const current = this.pending.shift() as PriorityEnqueuedTask<T, R>;
+			if (previousLength > 0 && this.pending.length === 0) {
+				this.resolveEmptyWaiters();
+			}
+			this.resolveSizeLessThanWaiters();
 			this.active++;
+			if (this.active >= this.concurrency) {
+				this.resolveSaturatedWaiters();
+			}
 			const token = new CancellableToken(this.abortController.signal);
 			this.worker(current.task, token)
 				.then(
 					(result) => current.defer.resolve(result),
-					(error) => current.defer.reject(error),
+					(error) => {
+						this.resolveErrorWaiters({ task: current.task, error });
+						current.defer.reject(error);
+					},
 				)
 				.finally(() => {
 					this.active--;
@@ -163,6 +222,40 @@ class DefaultPriorityTaskQueue<T, R> implements PriorityTaskQueue<T, R> {
 		for (const waiter of this.idleWaiters.splice(0)) {
 			waiter.resolve();
 		}
+	}
+
+	private resolveEmptyWaiters() {
+		for (const waiter of this.emptyWaiters.splice(0)) {
+			waiter.resolve();
+		}
+	}
+
+	private resolveSaturatedWaiters() {
+		for (const waiter of this.saturatedWaiters.splice(0)) {
+			waiter.resolve();
+		}
+	}
+
+	private resolveErrorWaiters(error: QueueTaskError<T>) {
+		for (const waiter of this.errorWaiters.splice(0)) {
+			waiter.resolve(error);
+		}
+	}
+
+	private resolveSizeLessThanWaiters() {
+		if (this.sizeLessThanWaiters.length === 0) {
+			return;
+		}
+		const retained: SizeLessThanWaiter[] = [];
+		for (const waiter of this.sizeLessThanWaiters) {
+			if (this.length < waiter.size) {
+				waiter.defer.resolve();
+				continue;
+			}
+			retained.push(waiter);
+		}
+		this.sizeLessThanWaiters.length = 0;
+		this.sizeLessThanWaiters.push(...retained);
 	}
 }
 

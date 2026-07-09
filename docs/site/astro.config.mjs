@@ -2,29 +2,25 @@
 
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
+import { generateSidebar } from "./src/utils/generate-sidebar.mjs";
 
 // https://astro.build/config
 export default defineConfig({
+    base: "/",
     integrations: [
         starlight({
-            title: "My Docs",
+            title: "@vgerbot/async",
             components: {
-                SocialIcons: './src/components/SocialIcons.astro',
+                SocialIcons: "./src/components/SocialIcons.astro",
             },
-            social: [{ icon: "github", label: "GitHub", href: "https://github.com/withastro/starlight" }],
-            sidebar: [
+            social: [
                 {
-                    label: "Guides",
-                    items: [
-                        // Each item here is one entry in the navigation menu.
-                        { label: "Example Guide", slug: "guides/example" },
-                    ],
-                },
-                {
-                    label: "Reference",
-                    autogenerate: { directory: "reference" },
+                    icon: "github",
+                    label: "GitHub",
+                    href: "https://github.com/vgerbot-libraries/async",
                 },
             ],
+            sidebar: generateSidebar(),
         }),
     ],
 });

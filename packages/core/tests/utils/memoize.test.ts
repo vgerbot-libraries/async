@@ -63,14 +63,21 @@ describe("memoize", () => {
 		expect(fn.cache.has("5")).toBe(false);
 	});
 
-	test("handles token parameter", async () => {
-		const fn = memoize(async (n: number, token) => {
-			await token.sleep(10);
-			return n * 2;
-		});
+	test("passes CancellableToken and supports cancellation", async () => {
+		const controller = new AbortController();
 
-		const result = await fn(5);
-		expect(result).toBe(10);
+		const fn = memoize(
+			async (n: number, token) => {
+				expect(token.signal).toBeInstanceOf(AbortSignal);
+				await token.sleep(1000);
+				return n * 2;
+			},
+			{ signal: controller.signal },
+		);
+
+		const handle = fn(5);
+		controller.abort("cancel memoize");
+		await expect(handle.promise).rejects.toThrow();
 	});
 
 	test("caches complex return values", async () => {

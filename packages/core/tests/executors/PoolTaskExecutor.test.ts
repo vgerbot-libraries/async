@@ -74,7 +74,7 @@ describe("PoolTaskExecutor", () => {
 	});
 
 	test("should cancel all workers", async () => {
-		const executor = new PoolTaskExecutor(2);
+		const executor = new PoolTaskExecutor(1);
 
 		const task1 = executor.exec(async (token) => {
 			await token.sleep(1000);
@@ -86,11 +86,13 @@ describe("PoolTaskExecutor", () => {
 			return 2;
 		});
 
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
 		executor.cancel();
 
 		await expect(task1).rejects.toBeInstanceOf(CancelError);
 		await expect(task2).rejects.toBeInstanceOf(CancelError);
-		expect(executor.isCancelled()).toBe(true);
+		expect(executor.isCancelled()).toBe(false);
 	});
 
 	test("should report cancellation status", () => {
@@ -98,6 +100,9 @@ describe("PoolTaskExecutor", () => {
 		expect(executor.isCancelled()).toBe(false);
 
 		executor.cancel();
+		expect(executor.isCancelled()).toBe(false);
+
+		executor.shutdown();
 		expect(executor.isCancelled()).toBe(true);
 	});
 
@@ -125,5 +130,38 @@ describe("PoolTaskExecutor", () => {
 		});
 
 		expect(tokenSpy).toHaveBeenCalled();
+	});
+
+	test("should cancel queued tasks by kind without disabling executor", async () => {
+		const executor = new PoolTaskExecutor(1);
+
+		const first = executor.exec(
+			async () => {
+				await new Promise((resolve) => setTimeout(resolve, 20));
+				return "first";
+			},
+			{ kind: "alpha", name: "First task" },
+		);
+
+		const second = executor.exec(async () => "second", {
+			kind: "beta",
+		});
+		void second.catch(() => undefined);
+
+		executor.cancel({ kind: "beta" });
+
+		await expect(first).resolves.toBe("first");
+		await expect(second).rejects.toBeInstanceOf(CancelError);
+		expect(executor.isCancelled()).toBe(false);
+	});
+
+	test("should fall back to full cancellation when no task matches kind", () => {
+		const executor = new PoolTaskExecutor(1);
+
+		executor.cancel({ kind: "missing" });
+
+		expect(executor.isCancelled()).toBe(false);
+		const handle = executor.exec(async () => "will run", { kind: "alpha" });
+		return expect(handle).resolves.toBe("will run");
 	});
 });

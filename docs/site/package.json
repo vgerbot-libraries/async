@@ -5,13 +5,14 @@
     "scripts": {
         "dev": "astro dev",
         "start": "astro dev",
-        "build": "astro build",
+        "build": "astro build && node scripts/rewrite-paths.mjs",
         "preview": "astro preview",
         "astro": "astro"
     },
     "dependencies": {
         "@astrojs/starlight": "0.39.3",
-        "astro": "5.18.0",
+        "@vgerbot/async": "workspace:*",
+        "astro": "^6.0.0",
         "sharp": "0.34.5"
     }
 }

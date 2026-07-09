@@ -27,11 +27,4 @@ export class CancelError extends Error {
 		}
 		return new CancelError(message, { cause: rawReason, reason: rawReason });
 	}
-
-	withRejectionSite(): CancelError {
-		return new CancelError(this.message, {
-			cause: this,
-			reason: this.reason,
-		});
-	}
 }

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { CancelError } from "../../src/cancellable";
 import { priorityQueue } from "../../src/control-flow/priorityQueue";
 import { noop } from "../../src/utils";
 
@@ -87,7 +88,13 @@ describe("priorityQueue", () => {
 		q.resume();
 
 		await q.onIdle();
-		expect(order[0]).toBe("high");
+		expect(order).toHaveLength(5);
+		expect(order.indexOf("high")).toBeLessThan(order.indexOf("c"));
+		expect(order.indexOf("high")).toBeLessThan(order.indexOf("d"));
+		expect(order.indexOf("c")).toBeLessThan(order.indexOf("a"));
+		expect(order.indexOf("c")).toBeLessThan(order.indexOf("b"));
+		expect(order.indexOf("d")).toBeLessThan(order.indexOf("a"));
+		expect(order.indexOf("d")).toBeLessThan(order.indexOf("b"));
 	});
 
 	test("pause and resume", async () => {
@@ -104,7 +111,7 @@ describe("priorityQueue", () => {
 		q.push(1);
 		q.push(2);
 
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await Promise.resolve();
 		expect(count).toBe(0);
 
 		q.resume();
@@ -129,8 +136,8 @@ describe("priorityQueue", () => {
 
 		q.cancel();
 
-		await expect(p2).rejects.toThrow();
-		await expect(p3).rejects.toThrow();
+		await expect(p2).rejects.toBeInstanceOf(CancelError);
+		await expect(p3).rejects.toBeInstanceOf(CancelError);
 	});
 
 	test("length and running properties", async () => {
@@ -154,5 +161,45 @@ describe("priorityQueue", () => {
 		expect(q.length).toBe(0);
 		expect(q.running).toBe(0);
 		expect(q.idle).toBe(true);
+	});
+
+	test("onError resolves with failed task", async () => {
+		const q = priorityQueue(async (task: number) => {
+			if (task === 2) {
+				throw new Error("priority boom");
+			}
+			return task;
+		});
+
+		const onErrorPromise = q.onError();
+		const ok = q.push(1);
+		const failed = q.push(2);
+
+		await expect(ok).resolves.toBe(1);
+		await expect(failed).rejects.toThrow("priority boom");
+		await expect(onErrorPromise).resolves.toMatchObject({ task: 2 });
+	});
+
+	test("onEmpty resolves while workers may still run", async () => {
+		const q = priorityQueue(
+			async (task: number, token) => {
+				await token.sleep(task);
+				return task;
+			},
+			{ concurrency: 2 },
+		);
+
+		const execution = Promise.all([
+			q.push(10, 1),
+			q.push(10, 2),
+			q.push(50, 3),
+		]);
+
+		await q.onEmpty();
+		expect(q.length).toBe(0);
+		expect(q.running).toBeGreaterThan(0);
+
+		await q.onIdle();
+		await execution;
 	});
 });

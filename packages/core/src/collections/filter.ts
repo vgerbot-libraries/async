@@ -15,7 +15,7 @@ export interface FilterOptions<I = unknown> extends CancellableOptions<I[]> {
  * Filters an array of data asynchronously using a predicate function.
  * Allows controlling the maximum concurrency of the predicate execution.
  *
- * @template D - The type of the array data.
+ * @template I - The type of the input items.
  * @param data - The array of data to filter, or a promise that resolves to one.
  * @param predicate - An async function applied to each item to determine if it should be kept.
  * @param options - Configuration options, including cancellation token and concurrency limit.

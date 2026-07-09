@@ -14,7 +14,7 @@ describe("detect", () => {
 			{ concurrency: 2 },
 		);
 		await expect(handle.promise).resolves.toBe(3);
-		expect(seen.length).toBeGreaterThan(0);
+		expect(seen).toContain(3);
 	});
 
 	test("supports object input", async () => {

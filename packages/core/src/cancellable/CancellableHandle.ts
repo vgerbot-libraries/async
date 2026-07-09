@@ -1,5 +1,5 @@
-import { noop } from "../utils";
 import { Defer } from "../utils/Defer";
+import { noop } from "../utils/noop";
 import { CancelError } from "./CancelError";
 import { CANCEL_REASON } from "./internal";
 
@@ -32,6 +32,7 @@ export class CancellableHandle<T> extends Defer<T> {
 	/**
 	 * Creates a new CancellableHandle instance.
 	 * @param abortController - The AbortController used to manage cancellation
+	 * @param name - Optional name for this handle, used for debugging
 	 */
 	constructor(
 		private readonly abortController: AbortController,

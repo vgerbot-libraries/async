@@ -1,7 +1,7 @@
 import { AsyncTask } from "../cancellable/AsyncTask";
-import { Defer } from "../utils/Defer";
 import { DebounceTaskExecutor } from "./DebounceTaskExecutor";
-import { ITaskExecutor } from "./ITaskExecutor";
+import { ITaskExecutor, TaskCancelOptions, TaskOptions } from "./ITaskExecutor";
+import { TaskHandle } from "./TaskHandle";
 
 export interface ThrottleOptions {
 	leading?: boolean;
@@ -28,12 +28,22 @@ export class ThrottleTaskExecutor implements ITaskExecutor {
 		});
 	}
 
-	exec<T>(task: AsyncTask<T>): Defer<T> {
-		return this.executor.exec(task);
+	exec<T>(task: AsyncTask<T>, options?: TaskOptions): TaskHandle<T> {
+		return this.executor.exec(task, options);
 	}
 
-	cancel() {
-		this.executor.cancel();
+	shutdown(reason?: unknown): void {
+		this.executor.shutdown(reason);
+	}
+
+	cancel(reason?: unknown): void;
+	cancel(options: TaskCancelOptions): void;
+	cancel(reason: unknown, options: TaskCancelOptions): void;
+	cancel(
+		reasonOrOptions?: unknown | TaskCancelOptions,
+		maybeOptions?: TaskCancelOptions,
+	): void {
+		this.executor.cancel(reasonOrOptions as unknown, maybeOptions);
 	}
 
 	isCancelled(): boolean {

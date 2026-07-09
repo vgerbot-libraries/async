@@ -38,11 +38,11 @@ export type SettledResult<T> =
  * // Use with parallel to get all results
  * import { parallel, reflect } from "@vgerbot/async";
  *
- * const results = await parallel([
+ * const results = await parallel({},
  *   reflect(async () => "success"),
  *   reflect(async () => { throw new Error("fail"); }),
  *   reflect(async () => 42),
- * ]);
+ * );
  *
  * // results: [
  * //   { status: "fulfilled", value: "success" },

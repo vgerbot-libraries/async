@@ -58,7 +58,7 @@ export function debounce<T, Args extends unknown[] = unknown[]>(
 	const debounced = (...args: Args): Promise<T> => {
 		return executor.exec(async (token: CancellableToken) => {
 			return fn(...args);
-		}).promise as Promise<T>;
+		});
 	};
 
 	debounced.cancel = () => executor.cancel();

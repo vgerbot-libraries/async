@@ -75,7 +75,7 @@ export function waterfall<T1, T2, T3, T4>(
  * - The output of the previous task as its first argument
  * - A cancellation token as its second argument
  *
- * @param task1 - The first task to execute (receives void as input)
+ * @param task1 - The first task to execute (receives undefined as input)
  * @param args - Additional tasks and optional options
  * @returns A cancellable handle that resolves to the last task's output
  *

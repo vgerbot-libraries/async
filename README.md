@@ -5,7 +5,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/eeefd61dd6e5401ca936240a2c0384f5)](https://app.codacy.com/gh/vgerbot-libraries/async/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-A TypeScript-first async utility library that provides typed collection helpers, control-flow primitives, queueing, and cancellation support for modern async workflows.
+A TypeScript-first async utility library focused on cancellable async workflows, concurrency-limited collections, control-flow primitives, and task executors.
 
 ## Installation
 
@@ -17,7 +17,15 @@ pnpm add @vgerbot/async
 
 ```ts
 import { map, parallel, queue, cancellable } from "@vgerbot/async";
+
+// Module-level subpath import
+import { queue as queueFromModule } from "@vgerbot/async/control-flow";
+
+// Leaf-level subpath import
+import { auto } from "@vgerbot/async/control-flow/auto";
 ```
+
+Internal implementation paths are intentionally not exported.
 
 ### Repository development
 
@@ -175,6 +183,55 @@ const q = queue<number, number>(async (job) => job * 2, { concurrency: 2 });
 q.push(1);
 q.push(2);
 q.push(3);
+
+await q.onSaturated(); // running reaches concurrency
+await q.onEmpty(); // pending queue becomes empty
+await q.onIdle(); // pending empty + no running tasks
+
+const nextError = await q.onError();
+console.error(nextError.task, nextError.error);
+
+await q.onSizeLessThan(2); // resolves when pending size < 2
+```
+
+### Auto
+
+```ts
+import { auto } from "@vgerbot/async";
+
+const handle = auto<{
+  config: { baseUrl: string };
+  user: { id: number; url: string };
+  posts: string[];
+}>(
+  {
+    config: [[], async () => ({ baseUrl: "/api" })],
+    user: [["config"], async (results) => {
+      return { id: 1, url: `${results.config.baseUrl}/users/1` };
+    }],
+    posts: [["user"], async (results) => [`post-of-${results.user.id}`]],
+  },
+  { errorMode: "reject" },
+);
+
+const result = await handle.promise;
+```
+
+```ts
+// Optional resolve mode returns partial results and error.
+const resolved = await auto<{ a: number; b: number; c: number }>(
+  {
+    a: [[], async () => 1],
+    b: [["a"], async (results) => results.a + 1],
+    c: [["a"], async () => {
+      throw new Error("failed");
+    }],
+  },
+  { errorMode: "resolve" },
+).promise;
+
+console.log(resolved.results); // partial results
+console.log(resolved.error); // AutoExecutionError | undefined
 ```
 
 ### Cancellation

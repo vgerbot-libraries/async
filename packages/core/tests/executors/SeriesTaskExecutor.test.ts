@@ -84,7 +84,7 @@ describe("SeriesTaskExecutor", () => {
 
 		executor.cancel();
 
-		await expect(task1).rejects.toBeInstanceOf(CancelError);
+		await expect(task1).resolves.toBe(1);
 		await expect(task2).rejects.toBeInstanceOf(CancelError);
 	});
 
@@ -93,6 +93,9 @@ describe("SeriesTaskExecutor", () => {
 		expect(executor.isCancelled()).toBe(false);
 
 		executor.cancel();
+		expect(executor.isCancelled()).toBe(false);
+
+		executor.shutdown();
 		expect(executor.isCancelled()).toBe(true);
 	});
 

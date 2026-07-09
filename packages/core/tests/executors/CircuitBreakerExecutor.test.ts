@@ -59,6 +59,7 @@ describe("CircuitBreakerExecutor", () => {
 		const executor = new CircuitBreakerExecutor({
 			failureThreshold: 2,
 			resetTimeout: 100,
+			halfOpenRequests: 3,
 		});
 
 		// Open circuit
@@ -77,14 +78,20 @@ describe("CircuitBreakerExecutor", () => {
 		// Wait for reset timeout
 		await new Promise((resolve) => setTimeout(resolve, 150));
 
-		// Next request should transition to HALF_OPEN
+		// State is still OPEN until exec() is called
+		expect(executor.getState()).toBe("OPEN");
+
+		// exec() triggers transition to HALF_OPEN; a failing task reopens circuit
 		try {
-			await executor.exec(async () => "test");
+			await executor.exec(async () => {
+				throw new Error("still failing");
+			});
 		} catch (_e) {
-			// May fail, but state should change
+			// Expected
 		}
 
-		expect(executor.getState()).not.toBe("OPEN");
+		// Failure in HALF_OPEN reopens the circuit
+		expect(executor.getState()).toBe("OPEN");
 	});
 
 	test("closes circuit after successful requests in HALF_OPEN", async () => {
@@ -108,10 +115,12 @@ describe("CircuitBreakerExecutor", () => {
 		// Wait for reset
 		await new Promise((resolve) => setTimeout(resolve, 150));
 
-		// Successful requests in HALF_OPEN
+		// First success in HALF_OPEN — not enough to close yet
 		await executor.exec(async () => "success1");
-		await executor.exec(async () => "success2");
+		expect(executor.getState()).toBe("HALF_OPEN");
 
+		// Second success closes the circuit
+		await executor.exec(async () => "success2");
 		expect(executor.getState()).toBe("CLOSED");
 	});
 
@@ -178,15 +187,12 @@ describe("CircuitBreakerExecutor", () => {
 
 		executor.cancel();
 
+		expect(executor.isCancelled()).toBe(false);
+
+		await expect(executor.exec(async () => "test")).resolves.toBe("test");
+
+		executor.shutdown();
 		expect(executor.isCancelled()).toBe(true);
-
-		await expect(executor.exec(async () => "test")).rejects.toThrow(
-			"Circuit breaker executor permanently cancelled",
-		);
-
-		// Subsequent calls should also fail
-		await expect(executor.exec(async () => "test2")).rejects.toThrow(
-			"Circuit breaker executor permanently cancelled",
-		);
+		expect(() => executor.exec(async () => "test2")).toThrow();
 	});
 });

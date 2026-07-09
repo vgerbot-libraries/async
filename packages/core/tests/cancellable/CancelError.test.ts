@@ -20,17 +20,6 @@ describe("CancelError", () => {
 		expect(error.cause).toBe(reason);
 	});
 
-	test("should chain cause via withRejectionSite", () => {
-		const reason = new Error("origin");
-		const base = CancelError.fromReason("Task canceled", reason);
-		const decorated = base.withRejectionSite();
-
-		expect(decorated).toBeInstanceOf(CancelError);
-		expect(decorated.reason).toBe(reason);
-		expect(decorated.cause).toBe(base);
-		expect((decorated.cause as CancelError).cause).toBe(reason);
-	});
-
 	test("should return existing CancelError from fromReason", () => {
 		const existing = new CancelError("already", { reason: "r" });
 		expect(CancelError.fromReason("wrap", existing)).toBe(existing);

@@ -9,7 +9,7 @@ import { CollectionInput, normalizeCollection } from "./internalCollection";
 /**
  * Iterates over an array of data, applying an asynchronous reducer function sequentially.
  *
- * @template D - The type of the array data.
+ * @template I - The type of the input items.
  * @template R - The type of the accumulated result.
  * @param data - The array of data to reduce.
  * @param reducer - An async function applied to each element, receiving the accumulator, the current item, and a cancellation token.

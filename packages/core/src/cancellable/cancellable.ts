@@ -1,3 +1,4 @@
+import { noop } from "../utils";
 import { AsyncTask } from "./AsyncTask";
 import { CancelError } from "./CancelError";
 import { CancellableHandle } from "./CancellableHandle";
@@ -6,7 +7,7 @@ import { CANCEL_REASON, RETRY_ATTEMPT } from "./internal";
 import { CancellableOptions } from "./options";
 
 /**
- * Creates a cancellable asynchronous task with optional retry logic.
+ * Creates a cancellable asynchronous task.
  * Returns a CancellableHandle that can be used to cancel the task or await its result.
  *
  * @template T - The type of the task result
@@ -91,7 +92,7 @@ export function cancellable<T>(
 
 	token.onCancel((cancelError) => {
 		handle[CANCEL_REASON] = cancelError;
-		Promise.resolve(onCancel?.(cancelError));
+		Promise.resolve(onCancel?.(cancelError)).catch(noop);
 	});
 
 	async function executeWithRetry(): Promise<T> {
@@ -120,7 +121,7 @@ export function cancellable<T>(
 
 		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 			token.throwIfCancelled();
-			token[RETRY_ATTEMPT] = attempt;
+			token[RETRY_ATTEMPT] = attempt - 1;
 			try {
 				return await asyncTask(token);
 			} catch (error) {

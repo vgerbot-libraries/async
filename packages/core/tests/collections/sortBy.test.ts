@@ -59,8 +59,10 @@ describe("sortBy", () => {
 		];
 		const handle = sortBy(items, async (item) => item.value);
 		const result = await handle;
-		expect(result[0].value).toBe(1);
-		expect(result[1].value).toBe(2);
-		expect(result[2].value).toBe(2);
+		expect(result).toEqual([
+			{ id: 2, value: 1 },
+			{ id: 1, value: 2 },
+			{ id: 3, value: 2 },
+		]);
 	});
 });
