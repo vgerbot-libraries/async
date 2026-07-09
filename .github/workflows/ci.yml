@@ -31,6 +31,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
 
       - name: Get pnpm store directory
         shell: bash
@@ -111,10 +113,50 @@ jobs:
       - name: Test
         run: pnpm test
 
+  changeset-check:
+    name: Changeset Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for changeset
+        run: |
+          if [[ "${{ github.head_ref }}" == "changeset-release/master" ]]; then
+            echo "This is a changeset release PR, skipping changeset check"
+            exit 0
+          fi
+
+          if [ -z "$(find .changeset -name '*.md' -not -name 'README.md' -not -name 'config.json')" ]; then
+            echo "❌ No changeset found. Please add a changeset for your changes."
+            echo "Run 'pnpm changeset' to create one."
+            exit 1
+          else
+            echo "✅ Changeset found"
+          fi
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -122,7 +164,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
