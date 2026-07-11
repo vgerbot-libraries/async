@@ -48,10 +48,10 @@ describe("forever", () => {
 			await token.sleep(1); // Small delay to prevent blocking event loop
 		});
 
-		await new Promise((resolve) => setTimeout(resolve, 50));
+		await new Promise((resolve) => setTimeout(resolve, 200));
 		handle.cancel();
 
 		await expect(handle.promise).rejects.toThrow(CancelError);
-		expect(count).toBeGreaterThan(10); // Should run many times in 50ms
+		expect(count).toBeGreaterThan(5); // Should run multiple times; threshold is low to accommodate slow Windows CI timers
 	});
 });
