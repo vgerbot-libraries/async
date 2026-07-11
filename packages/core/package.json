@@ -1,6 +1,6 @@
 {
 	"name": "@vgerbot/async",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"private": false,
 	"description": "A TypeScript-first async utility library focused on cancellable async workflows, concurrency-limited collections, control-flow primitives, and task executors.",
 	"keywords": [
