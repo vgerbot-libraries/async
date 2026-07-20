@@ -91,7 +91,7 @@
 		"@types/node": "catalog:",
 		"@vitest/coverage-istanbul": "catalog:",
 		"tsup": "catalog:",
-		"typedoc": "^0.28.19",
+		"typedoc": "^0.28.20",
 		"typescript": "catalog:",
 		"vitest": "catalog:"
 	}
