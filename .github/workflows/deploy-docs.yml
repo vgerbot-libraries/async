@@ -45,7 +45,7 @@ jobs:
           cp -r docs/api docs/site/dist/api
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site/dist
 
